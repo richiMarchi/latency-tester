@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+type DataJSON struct {
+	Timestamp int64
+	Payload []byte
+}
+
 func main() {
 	if len(os.Args) != 4 {
 		fmt.Fprintln(os.Stderr, "usage: go run client.go <host:port> <repetitions> <log-file>")
@@ -61,11 +66,13 @@ func main() {
 				log.Println("read: ", err)
 				return
 			}
-			var jsonMap map[string]int64
+			var jsonMap DataJSON
 			_ = json.Unmarshal(message, &jsonMap)
-			oldTs, _ := jsonMap["timestamp"]
+			oldTs := jsonMap.Timestamp
 			latency := getTimestamp() - oldTs
 			log.Printf("recv: %d.%d ms", latency / int64(time.Millisecond), latency % int64(time.Millisecond))
+			payloadReceived := jsonMap.Payload
+			log.Println("PAYLOAD SIZE = ", len(payloadReceived))
 			if !firstIteration {
 				results.WriteString(",")
 			} else {
@@ -75,17 +82,20 @@ func main() {
 		}
 	}()
 
+	payload := make([]byte, 16)
+	log.Println("STARTING PAYLOAD SIZE = ", len(payload))
+
 	if reps == 0 {
-		infiniteSendLoop(done, c, interrupt)
+		infiniteSendLoop(&done, c, &interrupt, &payload)
 	} else {
-		sendNTimes(reps, c, done)
+		sendNTimes(reps, c, &done, &payload)
 	}
 }
 
-func sendNTimes(n int, c *websocket.Conn, done chan struct{}) {
+func sendNTimes(n int, c *websocket.Conn, done *chan struct{}, payload *[]byte) {
 	for i := 0; i < n; i++ {
 		timestamp := getTimestamp()
-		jsonMap := map[string]int64{"interval": 500, "timestamp": timestamp}
+		jsonMap := DataJSON{Timestamp: timestamp, Payload: *payload}
 		marshal, _ := json.Marshal(jsonMap)
 		err := c.WriteMessage(websocket.TextMessage, marshal)
 		if err != nil {
@@ -100,20 +110,20 @@ func sendNTimes(n int, c *websocket.Conn, done chan struct{}) {
 		return
 	}
 	select {
-	case <-done:
+	case <-*done:
 	case <-time.After(time.Second):
 	}
 	return
 }
 
-func infiniteSendLoop(done chan struct{}, c *websocket.Conn, interrupt chan os.Signal) {
+func infiniteSendLoop(done *chan struct{}, c *websocket.Conn, interrupt *chan os.Signal, payload *[]byte) {
 
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-done:
+		case <-*done:
 			return
 		case <-ticker.C:
 			timestamp := getTimestamp()
@@ -124,7 +134,7 @@ func infiniteSendLoop(done chan struct{}, c *websocket.Conn, interrupt chan os.S
 				log.Println("write: ", err)
 				return
 			}
-		case <-interrupt:
+		case <-*interrupt:
 			log.Println("interrupt")
 
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
@@ -133,7 +143,7 @@ func infiniteSendLoop(done chan struct{}, c *websocket.Conn, interrupt chan os.S
 				return
 			}
 			select {
-			case <-done:
+			case <-*done:
 			case <-time.After(time.Second):
 			}
 			return
