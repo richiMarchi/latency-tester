@@ -19,16 +19,22 @@ type DataJSON struct {
 }
 
 func main() {
-	if len(os.Args) != 4 {
-		fmt.Fprintln(os.Stderr, "usage: go run client.go <host:port> <repetitions> <log-file>")
+	if len(os.Args) != 5 {
+		fmt.Fprintln(os.Stderr, "usage: go run client.go <host:port> <repetitions> <log-file> <payload-Bytes>")
 		os.Exit(1)
 	}
 	address := os.Args[1]
 	reps, convErr := strconv.Atoi(os.Args[2])
 	if convErr != nil || reps < 0 {
 		fmt.Fprintln(os.Stderr, "<repetitions> must be a positive number")
+		os.Exit(1)
 	}
 	logFile := os.Args[3]
+	payloadBytes, convErr :=  strconv.Atoi(os.Args[4])
+	if convErr != nil || payloadBytes < 0 {
+		fmt.Fprintln(os.Stderr, "<payload-Bytes> must be a positive number")
+		os.Exit(1)
+	}
 
 	log.SetFlags(0)
 
@@ -68,11 +74,8 @@ func main() {
 			}
 			var jsonMap DataJSON
 			_ = json.Unmarshal(message, &jsonMap)
-			oldTs := jsonMap.Timestamp
-			latency := getTimestamp() - oldTs
-			log.Printf("recv: %d.%d ms", latency / int64(time.Millisecond), latency % int64(time.Millisecond))
-			payloadReceived := jsonMap.Payload
-			log.Println("PAYLOAD SIZE = ", len(payloadReceived))
+			latency := getTimestamp() - jsonMap.Timestamp
+			log.Printf("latency: %d.%d ms", latency / int64(time.Millisecond), latency % int64(time.Millisecond))
 			if !firstIteration {
 				results.WriteString(",")
 			} else {
@@ -82,8 +85,7 @@ func main() {
 		}
 	}()
 
-	payload := make([]byte, 16)
-	log.Println("STARTING PAYLOAD SIZE = ", len(payload))
+	payload := make([]byte, payloadBytes)
 
 	if reps == 0 {
 		infiniteSendLoop(&done, c, &interrupt, &payload)
