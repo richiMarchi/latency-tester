@@ -22,13 +22,11 @@ type DataJSON struct {
 var reps = flag.Int("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "log.csv", "file to store latency numbers")
 var payloadBytes = flag.Int("payload", 64, "bytes of the payload")
+var interval = flag.Int("interval", 1000, "send interval time (ms)")
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "usage: go run client.go <host:port>")
-		os.Exit(1)
-	}
-	address := os.Args[1]
+	flag.Parse()
+	address := flag.Arg(0)
 	if *reps < 0 {
 		fmt.Fprintln(os.Stderr, "<repetitions> must be a positive number")
 		os.Exit(1)
@@ -37,14 +35,20 @@ func main() {
 		fmt.Fprintln(os.Stderr, "<payload-Bytes> must be a positive number")
 		os.Exit(1)
 	}
-
 	log.SetFlags(0)
+
+	fmt.Println("Repetitions:\t", *reps)
+	fmt.Println("Log File:\t", *logFile)
+	fmt.Println("Payload Bytes:\t", *payloadBytes)
+	fmt.Println("Send Interval:\t", *interval)
+	fmt.Println("Address:\t", address)
+
+	fmt.Println()
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
 	u := url.URL{Scheme: "ws", Host: address, Path: "/echo"}
-	log.Printf("connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -77,7 +81,7 @@ func main() {
 			var jsonMap DataJSON
 			_ = json.Unmarshal(message, &jsonMap)
 			latency := getTimestamp() - jsonMap.Timestamp
-			log.Printf("latency: %d.%d ms", latency / int64(time.Millisecond), latency % int64(time.Millisecond))
+			log.Printf("latency:\t%d.%d ms", latency / int64(time.Millisecond), latency % int64(time.Millisecond))
 			if !firstIteration {
 				results.WriteString(",")
 			} else {
@@ -106,7 +110,7 @@ func sendNTimes(n int, c *websocket.Conn, done *chan struct{}, payload *[]byte) 
 			log.Println("write: ", err)
 			return
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Duration(*interval) * time.Millisecond)
 	}
 	err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
@@ -122,7 +126,7 @@ func sendNTimes(n int, c *websocket.Conn, done *chan struct{}, payload *[]byte) 
 
 func infiniteSendLoop(done *chan struct{}, c *websocket.Conn, interrupt *chan os.Signal, payload *[]byte) {
 
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(time.Duration(*interval) * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
@@ -131,7 +135,7 @@ func infiniteSendLoop(done *chan struct{}, c *websocket.Conn, interrupt *chan os
 			return
 		case <-ticker.C:
 			timestamp := getTimestamp()
-			jsonMap := map[string]int64{"interval": 500, "timestamp": timestamp}
+			jsonMap := DataJSON{ Timestamp: timestamp, Payload: *payload}
 			marshal, _ := json.Marshal(jsonMap)
 			err := c.WriteMessage(websocket.TextMessage, marshal)
 			if err != nil {

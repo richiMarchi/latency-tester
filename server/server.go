@@ -9,7 +9,7 @@ import (
 )
 
 var addr = flag.String("addr", "0.0.0.0:8080", "http service address")
-var interval = flag.Float64("interval", 0, "response interval time (ms)")
+var interval = flag.Int("interval", 0, "response interval time (ms)")
 
 var upgrader = websocket.Upgrader{}
 
@@ -28,7 +28,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		}
 		time.Sleep(time.Duration(*interval) * time.Millisecond)
 		err = c.WriteMessage(mt, message)
-		log.Printf("recv: %s", message)
+		log.Printf("recv: ACK")
 		if err != nil {
 			log.Println("write: ", err)
 			break
