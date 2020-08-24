@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/csv"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
@@ -18,20 +19,21 @@ type DataJSON struct {
 	Payload []byte
 }
 
+var reps = flag.Int("reps", 0, "number of repetitions")
+var logFile = flag.String("log", "log.csv", "file to store latency numbers")
+var payloadBytes = flag.Int("payload", 64, "bytes of the payload")
+
 func main() {
-	if len(os.Args) != 5 {
-		fmt.Fprintln(os.Stderr, "usage: go run client.go <host:port> <repetitions> <log-file> <payload-Bytes>")
+	if len(os.Args) != 2 {
+		fmt.Fprintln(os.Stderr, "usage: go run client.go <host:port>")
 		os.Exit(1)
 	}
 	address := os.Args[1]
-	reps, convErr := strconv.Atoi(os.Args[2])
-	if convErr != nil || reps < 0 {
+	if *reps < 0 {
 		fmt.Fprintln(os.Stderr, "<repetitions> must be a positive number")
 		os.Exit(1)
 	}
-	logFile := os.Args[3]
-	payloadBytes, convErr :=  strconv.Atoi(os.Args[4])
-	if convErr != nil || payloadBytes < 0 {
+	if *payloadBytes < 0 {
 		fmt.Fprintln(os.Stderr, "<payload-Bytes> must be a positive number")
 		os.Exit(1)
 	}
@@ -52,7 +54,7 @@ func main() {
 
 	done := make(chan struct{})
 
-	results, err := os.Create(logFile)
+	results, err := os.Create(*logFile)
 	if err != nil {
 		log.Fatalf("failed creating file: %s", err)
 	}
@@ -85,12 +87,12 @@ func main() {
 		}
 	}()
 
-	payload := make([]byte, payloadBytes)
+	payload := make([]byte, *payloadBytes)
 
-	if reps == 0 {
+	if *reps == 0 {
 		infiniteSendLoop(&done, c, &interrupt, &payload)
 	} else {
-		sendNTimes(reps, c, &done, &payload)
+		sendNTimes(*reps, c, &done, &payload)
 	}
 }
 
