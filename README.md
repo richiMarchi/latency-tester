@@ -10,4 +10,4 @@ Server
 
 Client
 
-`docker run -p 8080:8080 --rm --network="host" richimarchi/latency-tester_client:latest`
+`docker run -p 8080:8080 -v /home/rick/lat-test:/log --rm richimarchi/latency-tester_client:latest`

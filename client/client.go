@@ -20,7 +20,7 @@ type DataJSON struct {
 }
 
 var reps = flag.Int("reps", 0, "number of repetitions")
-var logFile = flag.String("log", "log.csv", "file to store latency numbers")
+var logFile = flag.String("log", "/log/log.csv", "file to store latency numbers")
 var payloadBytes = flag.Int("payload", 64, "bytes of the payload")
 var interval = flag.Int("interval", 1000, "send interval time (ms)")
 
