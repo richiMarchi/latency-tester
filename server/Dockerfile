@@ -13,4 +13,4 @@ RUN go build -o server .
 EXPOSE 8080
 
 # Run the executable
-CMD ["./server"]
+ENTRYPOINT ["./server"]

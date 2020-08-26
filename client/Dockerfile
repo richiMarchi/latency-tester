@@ -10,4 +10,4 @@ RUN go get -d -v ./...
 RUN go build -o client .
 
 # Run the executable
-CMD ["./client", "localhost:8080"]
+ENTRYPOINT ["./client"]
