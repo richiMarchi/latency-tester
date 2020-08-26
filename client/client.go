@@ -11,30 +11,23 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"sync"
 	"time"
 )
 
 type DataJSON struct {
-	Timestamp int64
+	Id      uint64
 	Payload []byte
 }
 
-var reps = flag.Int("reps", 0, "number of repetitions")
+var reps = flag.Uint64("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "/log/log.csv", "file to store latency numbers")
-var payloadBytes = flag.Int("payload", 64, "bytes of the payload")
-var interval = flag.Int("interval", 1000, "send interval time (ms)")
+var payloadBytes = flag.Uint("payload", 64, "bytes of the payload")
+var interval = flag.Uint("interval", 1000, "send interval time (ms)")
 
 func main() {
 	flag.Parse()
 	address := flag.Arg(0)
-	if *reps < 0 {
-		fmt.Fprintln(os.Stderr, "<repetitions> must be a positive number")
-		os.Exit(1)
-	}
-	if *payloadBytes < 0 {
-		fmt.Fprintln(os.Stderr, "<payload-Bytes> must be a positive number")
-		os.Exit(1)
-	}
 	log.SetFlags(0)
 
 	fmt.Println("Repetitions:\t", *reps)
@@ -64,24 +57,33 @@ func main() {
 	}
 
 	csvWriter := csv.NewWriter(results)
-	firstIteration := true
+	timestampMap := make(map[uint64]int64)
+	stop := false
 
+	var wg sync.WaitGroup
+	wg.Add(1)
 	// Parallel read loop
 	go func() {
+		defer wg.Done()
 		defer close(done)
 		defer results.Close()
 		defer csvWriter.Flush()
 		defer results.WriteString("\n")
-		for  {
+
+		firstIteration := true
+		for !stop || len(timestampMap) > 0 {
+
 			_, message, err := c.ReadMessage()
 			if err != nil {
 				log.Println("read: ", err)
 				return
 			}
+			tmpTs := getTimestamp()
 			var jsonMap DataJSON
 			_ = json.Unmarshal(message, &jsonMap)
-			latency := getTimestamp() - jsonMap.Timestamp
-			log.Printf("latency:\t%d.%d ms", latency / int64(time.Millisecond), latency % int64(time.Millisecond))
+			latency := tmpTs - timestampMap[jsonMap.Id]
+			delete(timestampMap, jsonMap.Id)
+			log.Printf("%d.\t%d.%d ms", jsonMap.Id + 1, latency / int64(time.Millisecond), latency % int64(time.Millisecond))
 			if !firstIteration {
 				results.WriteString(",")
 			} else {
@@ -89,21 +91,31 @@ func main() {
 			}
 			results.WriteString(strconv.Itoa(int(latency / int64(time.Millisecond))) + "." + strconv.Itoa(int(latency % int64(time.Millisecond))))
 		}
+		//TODO: interrupt handler for read loop
 	}()
 
 	payload := make([]byte, *payloadBytes)
 
+
 	if *reps == 0 {
-		infiniteSendLoop(&done, c, &interrupt, &payload)
+		infiniteSendLoop(&done, c, &interrupt, &payload, &timestampMap)
 	} else {
-		sendNTimes(*reps, c, &done, &payload)
+		sendNTimes(*reps, c, &done, &payload, &timestampMap)
 	}
+
+	stop = true
+	wg.Wait()
 }
 
-func sendNTimes(n int, c *websocket.Conn, done *chan struct{}, payload *[]byte) {
-	for i := 0; i < n; i++ {
-		timestamp := getTimestamp()
-		jsonMap := DataJSON{Timestamp: timestamp, Payload: *payload}
+func sendNTimes(n uint64,
+								c *websocket.Conn,
+								done *chan struct{},
+								payload *[]byte,
+								tsMap *map[uint64]int64) {
+	var i uint64
+	for i = 0; i < n; i++ {
+		(*tsMap)[i] = getTimestamp()
+		jsonMap := DataJSON{Id: i, Payload: *payload}
 		marshal, _ := json.Marshal(jsonMap)
 		err := c.WriteMessage(websocket.TextMessage, marshal)
 		if err != nil {
@@ -124,18 +136,26 @@ func sendNTimes(n int, c *websocket.Conn, done *chan struct{}, payload *[]byte) 
 	return
 }
 
-func infiniteSendLoop(done *chan struct{}, c *websocket.Conn, interrupt *chan os.Signal, payload *[]byte) {
+func infiniteSendLoop(done *chan struct{},
+											c *websocket.Conn,
+											interrupt *chan os.Signal,
+											payload *[]byte,
+											tsMap *map[uint64]int64) {
 
 	ticker := time.NewTicker(time.Duration(*interval) * time.Millisecond)
 	defer ticker.Stop()
+
+	var id uint64
+	id = 0
 
 	for {
 		select {
 		case <-*done:
 			return
 		case <-ticker.C:
-			timestamp := getTimestamp()
-			jsonMap := DataJSON{ Timestamp: timestamp, Payload: *payload}
+			(*tsMap)[id] = getTimestamp()
+			jsonMap := DataJSON{ Id: id, Payload: *payload}
+			id = id + 1
 			marshal, _ := json.Marshal(jsonMap)
 			err := c.WriteMessage(websocket.TextMessage, marshal)
 			if err != nil {
