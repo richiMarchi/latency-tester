@@ -100,7 +100,7 @@ func main() {
 	if *reps == 0 {
 		infiniteSendLoop(&done, c, &interrupt, &payload, &timestampMap)
 	} else {
-		sendNTimes(*reps, c, &done, &payload, &timestampMap)
+		sendNTimes(*reps, c, &done, &interrupt, &payload, &timestampMap)
 	}
 
 	stop = true
@@ -110,6 +110,7 @@ func main() {
 func sendNTimes(n uint64,
 								c *websocket.Conn,
 								done *chan struct{},
+								interrupt *chan os.Signal,
 								payload *[]byte,
 								tsMap *map[uint64]int64) {
 	var i uint64
@@ -122,18 +123,28 @@ func sendNTimes(n uint64,
 			log.Println("write: ", err)
 			return
 		}
-		time.Sleep(time.Duration(*interval) * time.Millisecond)
+		select {
+		case <-*interrupt:
+			log.Println("interrupt")
+
+			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			if err != nil {
+				log.Println("write close: ", err)
+				return
+			}
+			select {
+			case <-*done:
+			case <-time.After(time.Second):
+			}
+			return
+		case <-time.After(time.Duration(*interval) * time.Millisecond):
+		}
 	}
 	err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
 		log.Println("write close: ", err)
 		return
 	}
-	select {
-	case <-*done:
-	case <-time.After(time.Second):
-	}
-	return
 }
 
 func infiniteSendLoop(done *chan struct{},
