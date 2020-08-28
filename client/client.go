@@ -20,8 +20,10 @@ type DataJSON struct {
 	Payload []byte
 }
 
+const LogPath = "/log/"
+
 var reps = flag.Uint64("reps", 0, "number of repetitions")
-var logFile = flag.String("log", "/log/log.csv", "file to store latency numbers")
+var logFile = flag.String("log", "log.csv", "file to store latency numbers")
 var payloadBytes = flag.Uint("payload", 64, "bytes of the payload")
 var interval = flag.Uint("interval", 1000, "send interval time (ms)")
 
@@ -31,7 +33,7 @@ func main() {
 	log.SetFlags(0)
 
 	fmt.Println("Repetitions:\t", *reps)
-	fmt.Println("Log File:\t", *logFile)
+	fmt.Println("Log File:\t", LogPath + *logFile)
 	fmt.Println("Payload Bytes:\t", *payloadBytes)
 	fmt.Println("Send Interval:\t", *interval)
 	fmt.Println("Address:\t", address)
@@ -51,7 +53,7 @@ func main() {
 
 	done := make(chan struct{})
 
-	results, err := os.Create(*logFile)
+	results, err := os.Create(LogPath + *logFile)
 	if err != nil {
 		log.Fatalf("failed creating file: %s", err)
 	}
