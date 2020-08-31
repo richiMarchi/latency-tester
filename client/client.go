@@ -18,6 +18,7 @@ import (
 type DataJSON struct {
 	Id      uint64
 	Payload []byte
+	ServerTimestamp int64
 }
 
 const LogPath = "/log/"
@@ -64,47 +65,50 @@ func main() {
 
 	var wgDispatcher sync.WaitGroup
 	wgDispatcher.Add(1)
+
 	// Parallel read dispatcher
 	go func() {
 		defer wgDispatcher.Done()
 		defer close(done)
 		defer results.Close()
 		defer csvWriter.Flush()
-		defer results.WriteString("\n")
 
 		var wgReader sync.WaitGroup
 
-		firstIteration := true
 		for !stop || len(timestampMap) > 0 {
-
 			_, message, err := c.ReadMessage()
+			tmpTs := getTimestamp()
 			if err != nil {
 				log.Println("read: ", err)
 				return
 			}
 			wgReader.Add(1)
+
 			// dispatch read
 			go func() {
 				defer wgReader.Done()
-				tmpTs := getTimestamp()
 				var jsonMap DataJSON
 				_ = json.Unmarshal(message, &jsonMap)
 				latency := tmpTs - timestampMap[jsonMap.Id]
-				delete(timestampMap, jsonMap.Id)
 				log.Printf("%d.\t%d.%d ms", jsonMap.Id+1, latency/int64(time.Millisecond), latency%int64(time.Millisecond))
-				if !firstIteration {
-					results.WriteString(",")
-				} else {
-					firstIteration = false
-				}
 				results.WriteString(strconv.Itoa(int(latency/int64(time.Millisecond))) + "." + strconv.Itoa(int(latency%int64(time.Millisecond))))
+				serverTs := jsonMap.ServerTimestamp
+				if serverTs != 0 {
+					firstLeg := serverTs - timestampMap[jsonMap.Id]
+					secondLeg := tmpTs - serverTs
+					results.WriteString(",")
+					results.WriteString(strconv.Itoa(int(firstLeg/int64(time.Millisecond))) + "." + strconv.Itoa(int(firstLeg%int64(time.Millisecond))))
+					results.WriteString(",")
+					results.WriteString(strconv.Itoa(int(secondLeg/int64(time.Millisecond))) + "." + strconv.Itoa(int(secondLeg%int64(time.Millisecond))))
+				}
+				results.WriteString("\n")
+				delete(timestampMap, jsonMap.Id)
 			}()
 		}
 		wgReader.Wait()
 	}()
 
 	payload := make([]byte, *payloadBytes)
-
 
 	if *reps == 0 {
 		infiniteSendLoop(&done, c, &interrupt, &payload, &timestampMap)
@@ -124,7 +128,7 @@ func sendNTimes(n uint64,
 								tsMap *map[uint64]int64) {
 	var i uint64
 	for i = 0; i < n; i++ {
-		jsonMap := DataJSON{Id: i, Payload: *payload}
+		jsonMap := DataJSON{Id: i, Payload: *payload, ServerTimestamp: 0}
 		marshal, _ := json.Marshal(jsonMap)
 		err := c.WriteMessage(websocket.TextMessage, marshal)
 		(*tsMap)[i] = getTimestamp()
@@ -173,11 +177,11 @@ func infiniteSendLoop(done *chan struct{},
 		case <-*done:
 			return
 		case <-ticker.C:
-			(*tsMap)[id] = getTimestamp()
-			jsonMap := DataJSON{ Id: id, Payload: *payload}
+			jsonMap := DataJSON{ Id: id, Payload: *payload, ServerTimestamp: 0}
 			id = id + 1
 			marshal, _ := json.Marshal(jsonMap)
 			err := c.WriteMessage(websocket.TextMessage, marshal)
+			(*tsMap)[id] = getTimestamp()
 			if err != nil {
 				log.Println("write: ", err)
 				return
