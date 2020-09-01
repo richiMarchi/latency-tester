@@ -178,10 +178,10 @@ func infiniteSendLoop(done *chan struct{},
 			return
 		case <-ticker.C:
 			jsonMap := DataJSON{ Id: id, Payload: *payload, ServerTimestamp: 0}
-			id = id + 1
 			marshal, _ := json.Marshal(jsonMap)
 			err := c.WriteMessage(websocket.TextMessage, marshal)
 			(*tsMap)[id] = getTimestamp()
+			id = id + 1
 			if err != nil {
 				log.Println("write: ", err)
 				return
