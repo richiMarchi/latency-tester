@@ -12,7 +12,7 @@ import (
 type DataJSON struct {
 	Id      uint64
 	Payload []byte
-	ServerTimestamp int64
+	ServerTimestamp time.Time
 }
 
 var addr = flag.String("addr", "0.0.0.0:8080", "http service address")
@@ -60,6 +60,6 @@ func echo(w http.ResponseWriter, r *http.Request) {
  	}
 }
 
-func getTimestamp() int64 {
-	return time.Now().UnixNano()
+func getTimestamp() time.Time {
+	return time.Now()
 }

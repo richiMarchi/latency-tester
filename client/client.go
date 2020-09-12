@@ -18,7 +18,7 @@ import (
 type DataJSON struct {
 	Id      uint64
 	Payload []byte
-	ServerTimestamp int64
+	ServerTimestamp time.Time
 }
 
 const LogPath = "/log/"
@@ -60,7 +60,7 @@ func main() {
 	}
 
 	csvWriter := csv.NewWriter(results)
-	timestampMap := make(map[uint64]int64)
+	timestampMap := make(map[uint64]time.Time)
 	stop := false
 
 	var wgDispatcher sync.WaitGroup
@@ -89,17 +89,17 @@ func main() {
 				defer wgReader.Done()
 				var jsonMap DataJSON
 				_ = json.Unmarshal(message, &jsonMap)
-				latency := tmpTs - timestampMap[jsonMap.Id]
-				log.Printf("%d.\t%d.%d ms", jsonMap.Id+1, latency/int64(time.Millisecond), latency%int64(time.Millisecond))
-				results.WriteString(strconv.Itoa(int(latency/int64(time.Millisecond))) + "." + strconv.Itoa(int(latency%int64(time.Millisecond))))
+				latency := tmpTs.Sub(timestampMap[jsonMap.Id])
+				log.Printf("%d.\t%d.%d ms", jsonMap.Id+1, latency/time.Millisecond, latency%time.Millisecond)
+				results.WriteString(strconv.Itoa(int(latency/time.Millisecond)) + "." + strconv.Itoa(int(latency%time.Millisecond)))
 				serverTs := jsonMap.ServerTimestamp
-				if serverTs != 0 {
-					firstLeg := serverTs - timestampMap[jsonMap.Id]
-					secondLeg := tmpTs - serverTs
+				if serverTs.UnixNano() != 0 {
+					firstLeg := serverTs.Sub(timestampMap[jsonMap.Id])
+					secondLeg := tmpTs.Sub(serverTs)
 					results.WriteString(",")
-					results.WriteString(strconv.Itoa(int(firstLeg/int64(time.Millisecond))) + "." + strconv.Itoa(int(firstLeg%int64(time.Millisecond))))
+					results.WriteString(strconv.Itoa(int(firstLeg/time.Millisecond)) + "." + strconv.Itoa(int(firstLeg%time.Millisecond)))
 					results.WriteString(",")
-					results.WriteString(strconv.Itoa(int(secondLeg/int64(time.Millisecond))) + "." + strconv.Itoa(int(secondLeg%int64(time.Millisecond))))
+					results.WriteString(strconv.Itoa(int(secondLeg/time.Millisecond)) + "." + strconv.Itoa(int(secondLeg%time.Millisecond)))
 				}
 				results.WriteString("\n")
 				delete(timestampMap, jsonMap.Id)
@@ -125,10 +125,10 @@ func sendNTimes(n uint64,
 								done *chan struct{},
 								interrupt *chan os.Signal,
 								payload *[]byte,
-								tsMap *map[uint64]int64) {
+								tsMap *map[uint64]time.Time) {
 	var i uint64
 	for i = 0; i < n; i++ {
-		jsonMap := DataJSON{Id: i, Payload: *payload, ServerTimestamp: 0}
+		jsonMap := DataJSON{Id: i, Payload: *payload, ServerTimestamp: time.Time{}}
 		marshal, _ := json.Marshal(jsonMap)
 		err := c.WriteMessage(websocket.TextMessage, marshal)
 		(*tsMap)[i] = getTimestamp()
@@ -164,7 +164,7 @@ func infiniteSendLoop(done *chan struct{},
 											c *websocket.Conn,
 											interrupt *chan os.Signal,
 											payload *[]byte,
-											tsMap *map[uint64]int64) {
+											tsMap *map[uint64]time.Time) {
 
 	ticker := time.NewTicker(time.Duration(*interval) * time.Millisecond)
 	defer ticker.Stop()
@@ -177,7 +177,7 @@ func infiniteSendLoop(done *chan struct{},
 		case <-*done:
 			return
 		case <-ticker.C:
-			jsonMap := DataJSON{ Id: id, Payload: *payload, ServerTimestamp: 0}
+			jsonMap := DataJSON{ Id: id, Payload: *payload, ServerTimestamp: time.Time{}}
 			marshal, _ := json.Marshal(jsonMap)
 			err := c.WriteMessage(websocket.TextMessage, marshal)
 			(*tsMap)[id] = getTimestamp()
@@ -203,6 +203,6 @@ func infiniteSendLoop(done *chan struct{},
 	}
 }
 
-func getTimestamp() int64 {
-	return time.Now().UnixNano()
+func getTimestamp() time.Time {
+	return time.Now()
 }
