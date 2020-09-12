@@ -40,24 +40,19 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println("read: ", err)
 		}
-
-		//parallel read and
-		go func() {
-			if *addTimestamp {
-				var jsonMap DataJSON
-				_ = json.Unmarshal(message, &jsonMap)
-				jsonMap.ServerTimestamp = getTimestamp()
-				message, _ = json.Marshal(jsonMap)
-			}
-			time.Sleep(time.Duration(*interval) * time.Millisecond)
-			err = c.WriteMessage(mt, message)
-			log.Printf("recv: ACK")
-			if err != nil {
-				log.Println("write: ", err)
-			}
-		}()
-
- 	}
+		if *addTimestamp {
+			var jsonMap DataJSON
+			_ = json.Unmarshal(message, &jsonMap)
+			jsonMap.ServerTimestamp = getTimestamp()
+			message, _ = json.Marshal(jsonMap)
+		}
+		time.Sleep(time.Duration(*interval) * time.Millisecond)
+		err = c.WriteMessage(mt, message)
+		log.Printf("recv: ACK")
+		if err != nil {
+			log.Println("write: ", err)
+		}
+	}
 }
 
 func getTimestamp() time.Time {
