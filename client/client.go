@@ -75,7 +75,7 @@ func main() {
 
 		var wgReader sync.WaitGroup
 
-		for !stop || len(timestampMap) > 0 {
+		for !stop || len(timestampMap) > 1 {
 			_, message, err := c.ReadMessage()
 			tmpTs := getTimestamp()
 			if err != nil {
@@ -90,16 +90,18 @@ func main() {
 				var jsonMap DataJSON
 				_ = json.Unmarshal(message, &jsonMap)
 				latency := tmpTs.Sub(timestampMap[jsonMap.Id])
-				log.Printf("%d.\t%d.%d ms", jsonMap.Id+1, latency/time.Millisecond, latency%time.Millisecond)
-				results.WriteString(strconv.Itoa(int(latency/time.Millisecond)) + "." + strconv.Itoa(int(latency%time.Millisecond)))
+				log.Printf("%d.\t%d.%d ms", jsonMap.Id+1, latency.Milliseconds(), latency%time.Millisecond)
+				results.WriteString(strconv.Itoa(int(latency.Milliseconds())) + "." + strconv.Itoa(int(latency%time.Millisecond)))
 				serverTs := jsonMap.ServerTimestamp
 				if serverTs.UnixNano() != 0 {
 					firstLeg := serverTs.Sub(timestampMap[jsonMap.Id])
 					secondLeg := tmpTs.Sub(serverTs)
 					results.WriteString(",")
-					results.WriteString(strconv.Itoa(int(firstLeg/time.Millisecond)) + "." + strconv.Itoa(int(firstLeg%time.Millisecond)))
+					results.WriteString(strconv.Itoa(int(firstLeg.Milliseconds())) + "." + strconv.Itoa(int(firstLeg%time.Millisecond)))
 					results.WriteString(",")
-					results.WriteString(strconv.Itoa(int(secondLeg/time.Millisecond)) + "." + strconv.Itoa(int(secondLeg%time.Millisecond)))
+					results.WriteString(strconv.Itoa(int(secondLeg.Milliseconds())) + "." + strconv.Itoa(int(secondLeg%time.Millisecond)))
+					results.WriteString(",")
+					results.WriteString(strconv.Itoa(int(serverTs.UnixNano())))
 				}
 				results.WriteString("\n")
 				delete(timestampMap, jsonMap.Id)
