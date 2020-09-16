@@ -17,8 +17,8 @@ import (
 
 type DataJSON struct {
 	Id      uint64
-	Payload []byte
 	ServerTimestamp time.Time
+	Payload []byte
 }
 
 const LogPath = "/log/"
