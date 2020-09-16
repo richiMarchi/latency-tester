@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
+	"math/rand"
 	"net/url"
 	"os"
 	"os/signal"
@@ -18,10 +19,13 @@ import (
 type DataJSON struct {
 	Id      uint64
 	ServerTimestamp time.Time
-	Payload []byte
+	Payload string
 }
 
 const LogPath = "/log/"
+const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 var reps = flag.Uint64("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "log.csv", "file to store latency numbers")
@@ -32,6 +36,9 @@ func main() {
 	flag.Parse()
 	address := flag.Arg(0)
 	log.SetFlags(0)
+	if *payloadBytes < 62 {
+		log.Fatal("Minimum payload size: 62")
+	}
 
 	fmt.Println("Repetitions:\t", *reps)
 	fmt.Println("Log File:\t", LogPath + *logFile)
@@ -110,7 +117,7 @@ func main() {
 		wgReader.Wait()
 	}()
 
-	payload := make([]byte, *payloadBytes)
+	payload := randomString(*payloadBytes - 62 /* offset to set the perfect desired message size */)
 
 	if *reps == 0 {
 		infiniteSendLoop(&done, c, &interrupt, &payload, &timestampMap)
@@ -126,7 +133,7 @@ func sendNTimes(n uint64,
 								c *websocket.Conn,
 								done *chan struct{},
 								interrupt *chan os.Signal,
-								payload *[]byte,
+								payload *string,
 								tsMap *map[uint64]time.Time) {
 	var i uint64
 	for i = 0; i < n; i++ {
@@ -165,7 +172,7 @@ func sendNTimes(n uint64,
 func infiniteSendLoop(done *chan struct{},
 											c *websocket.Conn,
 											interrupt *chan os.Signal,
-											payload *[]byte,
+											payload *string,
 											tsMap *map[uint64]time.Time) {
 
 	ticker := time.NewTicker(time.Duration(*interval) * time.Millisecond)
@@ -207,4 +214,16 @@ func infiniteSendLoop(done *chan struct{},
 
 func getTimestamp() time.Time {
 	return time.Now()
+}
+
+func stringWithCharset(length uint, charset string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+func randomString(length uint) string {
+	return stringWithCharset(length, charset)
 }
