@@ -39,6 +39,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
 			log.Println("read: ", err)
+			return
 		}
 		if *addTimestamp {
 			var jsonMap DataJSON
@@ -51,6 +52,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		log.Printf("recv: ACK")
 		if err != nil {
 			log.Println("write: ", err)
+			return
 		}
 	}
 }
