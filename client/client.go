@@ -70,6 +70,8 @@ func main() {
 	timestampMap := make(map[uint64]time.Time)
 	stop := false
 
+	var mux sync.Mutex
+
 	var wgDispatcher sync.WaitGroup
 	wgDispatcher.Add(1)
 
@@ -98,8 +100,9 @@ func main() {
 				_ = json.Unmarshal(message, &jsonMap)
 				latency := tmpTs.Sub(timestampMap[jsonMap.Id])
 				log.Printf("%d.\t%d.%d ms", jsonMap.Id+1, latency.Milliseconds(), latency%time.Millisecond)
-				results.WriteString(strconv.Itoa(int(latency.Milliseconds())) + "." + strconv.Itoa(int(latency%time.Millisecond)))
 				serverTs := jsonMap.ServerTimestamp
+				mux.Lock()
+				results.WriteString(strconv.Itoa(int(latency.Milliseconds())) + "." + strconv.Itoa(int(latency%time.Millisecond)))
 				if serverTs.UnixNano() != 0 {
 					firstLeg := serverTs.Sub(timestampMap[jsonMap.Id])
 					secondLeg := tmpTs.Sub(serverTs)
@@ -111,6 +114,7 @@ func main() {
 					results.WriteString(strconv.Itoa(int(serverTs.UnixNano())))
 				}
 				results.WriteString("\n")
+				mux.Unlock()
 				delete(timestampMap, jsonMap.Id)
 			}()
 		}
