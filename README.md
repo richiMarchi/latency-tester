@@ -1,7 +1,7 @@
 # Latency Tester
 WebSocket based latency tester
 
-##How to run the docker
+## How to run the docker
 
 Server
 
@@ -14,5 +14,5 @@ Client
 
 ```
 docker pull richimarchi/latency-tester_client
-docker run -p 8080:8080 -v /home/rick/lat-test:/log --rm richimarchi/latency-tester_client:latest [-reps=<repetitions>] [-payload=<bytes>] [-interval=<ms>] [-log=<log-file>] <ip:port>
+docker run -p 8080:8080 -v <local-log-folder>:/log --rm richimarchi/latency-tester_client:latest [-reps=<repetitions>] [-payload=<bytes>] [-interval=<ms>] [-log=<log-file>] <ip:port>
 ```
