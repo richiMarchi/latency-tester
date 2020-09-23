@@ -12,7 +12,7 @@ import (
 type DataJSON struct {
 	Id      uint64
 	ServerTimestamp time.Time
-	Payload []byte
+	Payload string
 }
 
 var addr = flag.String("addr", "0.0.0.0:8080", "http service address")
