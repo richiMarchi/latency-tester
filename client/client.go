@@ -30,19 +30,21 @@ var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 var reps = flag.Uint64("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "log.csv", "file to store latency numbers")
 var payloadBytes = flag.Uint("payload", 64, "bytes of the payload")
+var responseBytes = flag.Uint("responsePayload", *payloadBytes, "bytes of the response payload")
 var interval = flag.Uint("interval", 1000, "send interval time (ms)")
 
 func main() {
 	flag.Parse()
 	address := flag.Arg(0)
 	log.SetFlags(0)
-	if *payloadBytes < 62 {
+	if *payloadBytes < 62 || *responseBytes < 62 {
 		log.Fatal("Minimum payload size: 62")
 	}
 
 	fmt.Println("Repetitions:\t", *reps)
 	fmt.Println("Log File:\t", LogPath + *logFile)
 	fmt.Println("Payload Bytes:\t", *payloadBytes)
+	fmt.Println("Response Bytes:\t", *responseBytes)
 	fmt.Println("Send Interval:\t", *interval)
 	fmt.Println("Address:\t", address)
 
@@ -122,6 +124,12 @@ func main() {
 	}()
 
 	payload := randomString(*payloadBytes - 62 /* offset to set the perfect desired message size */)
+
+	resErr := c.WriteMessage(websocket.TextMessage, []byte(strconv.Itoa(int(*responseBytes))))
+	if resErr != nil {
+		log.Println("write: ", resErr)
+		return
+	}
 
 	if *reps == 0 {
 		infiniteSendLoop(&done, c, &interrupt, &payload, &timestampMap)
