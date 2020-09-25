@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"math/rand"
@@ -48,7 +47,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 
 	payload := randomString(uint(responseBytes) - 62 /* offset to set the perfect desired message size */)
 
-	log.Println("Connection established with", r.Host)
+	log.Println("Connection established with", c.RemoteAddr())
 	log.Println("Response payload size =", responseBytes)
 
 	defer c.Close()
@@ -56,7 +55,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
 			log.Println("read: ", err)
-			fmt.Println()
+			log.Println()
 			return
 		}
 		var jsonMap DataJSON

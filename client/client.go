@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"math/rand"
@@ -47,8 +46,7 @@ func main() {
 	log.Println("Response Bytes:\t", *responseBytes)
 	log.Println("Send Interval:\t", *interval)
 	log.Println("Address:\t", address)
-
-	fmt.Println()
+	log.Println()
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
