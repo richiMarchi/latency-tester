@@ -41,12 +41,12 @@ func main() {
 		log.Fatal("Minimum payload size: 62")
 	}
 
-	fmt.Println("Repetitions:\t", *reps)
-	fmt.Println("Log File:\t", LogPath + *logFile)
-	fmt.Println("Payload Bytes:\t", *payloadBytes)
-	fmt.Println("Response Bytes:\t", *responseBytes)
-	fmt.Println("Send Interval:\t", *interval)
-	fmt.Println("Address:\t", address)
+	log.Println("Repetitions:\t", *reps)
+	log.Println("Log File:\t", LogPath + *logFile)
+	log.Println("Payload Bytes:\t", *payloadBytes)
+	log.Println("Response Bytes:\t", *responseBytes)
+	log.Println("Send Interval:\t", *interval)
+	log.Println("Address:\t", address)
 
 	fmt.Println()
 
