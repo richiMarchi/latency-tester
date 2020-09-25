@@ -29,7 +29,7 @@ var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 var reps = flag.Uint64("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "log.csv", "file to store latency numbers")
 var requestBytes = flag.Uint("requestPayload", 64, "bytes of the payload")
-var responseBytes = flag.Uint("responsePayload", *requestBytes, "bytes of the response payload")
+var responseBytes = flag.Uint("responsePayload", 64, "bytes of the response payload")
 var interval = flag.Uint("interval", 1000, "send interval time (ms)")
 
 func main() {

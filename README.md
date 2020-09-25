@@ -31,7 +31,7 @@ Request payload size:
 `-requestPayload` = `64`
 
 Response payload size:
-`-responsePayload` = requestPayload runtime value
+`-responsePayload` = `64`
 
 Requests send interval:
 `-interval` = `1000`
