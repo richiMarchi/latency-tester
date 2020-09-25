@@ -29,21 +29,21 @@ var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 var reps = flag.Uint64("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "log.csv", "file to store latency numbers")
-var payloadBytes = flag.Uint("payload", 64, "bytes of the payload")
-var responseBytes = flag.Uint("responsePayload", *payloadBytes, "bytes of the response payload")
+var sendBytes = flag.Uint("sendPayload", 64, "bytes of the payload")
+var responseBytes = flag.Uint("responsePayload", *sendBytes, "bytes of the response payload")
 var interval = flag.Uint("interval", 1000, "send interval time (ms)")
 
 func main() {
 	flag.Parse()
 	address := flag.Arg(0)
 	log.SetFlags(0)
-	if *payloadBytes < 62 || *responseBytes < 62 {
+	if *sendBytes < 62 || *responseBytes < 62 {
 		log.Fatal("Minimum payload size: 62")
 	}
 
 	log.Println("Repetitions:\t", *reps)
 	log.Println("Log File:\t", LogPath + *logFile)
-	log.Println("Payload Bytes:\t", *payloadBytes)
+	log.Println("Payload Bytes:\t", *sendBytes)
 	log.Println("Response Bytes:\t", *responseBytes)
 	log.Println("Send Interval:\t", *interval)
 	log.Println("Address:\t", address)
@@ -123,7 +123,7 @@ func main() {
 		wgReader.Wait()
 	}()
 
-	payload := randomString(*payloadBytes - 62 /* offset to set the perfect desired message size */)
+	payload := randomString(*sendBytes - 62 /* offset to set the perfect desired message size */)
 
 	resErr := c.WriteMessage(websocket.TextMessage, []byte(strconv.Itoa(int(*responseBytes))))
 	if resErr != nil {
