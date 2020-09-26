@@ -9,8 +9,10 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -129,6 +131,9 @@ func main() {
 		return
 	}
 
+	wgDispatcher.Add(1)
+	go customPing(address, &wgDispatcher, &done)
+
 	if *reps == 0 {
 		infiniteSendLoop(&done, c, &interrupt, &payload, &timestampMap)
 	} else {
@@ -218,6 +223,25 @@ func infiniteSendLoop(done *chan struct{},
 			case <-time.After(time.Second):
 			}
 			return
+		}
+	}
+}
+
+func customPing(address string,
+								wGroup *sync.WaitGroup,
+								done *chan struct{}) {
+	defer wGroup.Done()
+	for {
+		output, _ := exec.Command("ping", strings.Split(address, ":")[0], "-c 1").Output()
+		rttMs := string(output)
+		if strings.Contains(rttMs, "time=") && strings.Contains(rttMs, " ms") {
+			floatMs, _ := strconv.ParseFloat(rttMs[strings.Index(rttMs, "time=")+5:strings.Index(rttMs, " ms")], 64)
+			log.Println("OS RTT:\t", floatMs)
+		}
+		select {
+		case <-*done:
+			return
+		case <-time.After(time.Duration(*interval) * time.Millisecond):
 		}
 	}
 }
