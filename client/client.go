@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"github.com/gorilla/websocket"
@@ -23,7 +22,7 @@ type DataJSON struct {
 	Payload string
 }
 
-const LogPath = "/log/"
+const LogPath = ""
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -63,65 +62,27 @@ func main() {
 
 	done := make(chan struct{})
 
-	results, err := os.Create(LogPath + *logFile)
-	if err != nil {
-		log.Fatalf("failed creating file: %s", err)
+	toolRtt, toolFileErr := os.Create(LogPath + *logFile)
+	if toolFileErr != nil {
+		log.Fatalf("failed creating file: %s", toolFileErr)
 	}
+	osRtt, osRttFileErr := os.Create(LogPath + "os-rtt_" + *logFile)
+	if osRttFileErr != nil {
+		log.Fatalf("failed creating file: %s", osRttFileErr)
+	}
+	/*tcpStats, tcpStatsFileErr := os.Create(LogPath + "tcp-stats_" + *logFile)
+	if tcpStatsFileErr != nil {
+		log.Fatalf("failed creating file: %s", tcpStatsFileErr)
+	}*/
 
-	csvWriter := csv.NewWriter(results)
 	timestampMap := make(map[uint64]time.Time)
 	stop := false
-
-	var mux sync.Mutex
 
 	var wgDispatcher sync.WaitGroup
 	wgDispatcher.Add(1)
 
 	// Parallel read dispatcher
-	go func() {
-		defer wgDispatcher.Done()
-		defer close(done)
-		defer results.Close()
-		defer csvWriter.Flush()
-
-		var wgReader sync.WaitGroup
-
-		for !stop || len(timestampMap) > 1 {
-			_, message, err := c.ReadMessage()
-			tmpTs := getTimestamp()
-			if err != nil {
-				log.Println("read: ", err)
-				return
-			}
-			wgReader.Add(1)
-
-			// dispatch read
-			go func() {
-				defer wgReader.Done()
-				var jsonMap DataJSON
-				_ = json.Unmarshal(message, &jsonMap)
-				latency := tmpTs.Sub(timestampMap[jsonMap.Id])
-				log.Printf("%d.\t%d.%d ms", jsonMap.Id+1, latency.Milliseconds(), latency%time.Millisecond)
-				serverTs := jsonMap.ServerTimestamp
-				mux.Lock()
-				results.WriteString(strconv.Itoa(int(latency.Milliseconds())) + "." + strconv.Itoa(int(latency%time.Millisecond)))
-				if serverTs.UnixNano() != 0 {
-					firstLeg := serverTs.Sub(timestampMap[jsonMap.Id])
-					secondLeg := tmpTs.Sub(serverTs)
-					results.WriteString(",")
-					results.WriteString(strconv.Itoa(int(firstLeg.Milliseconds())) + "." + strconv.Itoa(int(firstLeg%time.Millisecond)))
-					results.WriteString(",")
-					results.WriteString(strconv.Itoa(int(secondLeg.Milliseconds())) + "." + strconv.Itoa(int(secondLeg%time.Millisecond)))
-					results.WriteString(",")
-					results.WriteString(strconv.Itoa(int(serverTs.UnixNano())))
-				}
-				results.WriteString("\n")
-				mux.Unlock()
-				delete(timestampMap, jsonMap.Id)
-			}()
-		}
-		wgReader.Wait()
-	}()
+	go readDispatcher(c, &stop, &wgDispatcher, &done, toolRtt, &timestampMap)
 
 	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
 
@@ -132,7 +93,7 @@ func main() {
 	}
 
 	wgDispatcher.Add(1)
-	go customPing(address, &wgDispatcher, &done)
+	go customPing(address, &wgDispatcher, &done, osRtt)
 
 	if *reps == 0 {
 		infiniteSendLoop(&done, c, &interrupt, &payload, &timestampMap)
@@ -142,6 +103,62 @@ func main() {
 
 	stop = true
 	wgDispatcher.Wait()
+}
+
+func readDispatcher(c *websocket.Conn,
+										stop *bool,
+										wgDispatcher *sync.WaitGroup,
+										done *chan struct{},
+										toolRtt *os.File,
+										timestampMap *map[uint64]time.Time,) {
+	defer wgDispatcher.Done()
+	defer close(*done)
+	defer toolRtt.Close()
+
+	var wgReader sync.WaitGroup
+	var mux sync.Mutex
+
+	for !*stop || len(*timestampMap) > 1 {
+		_, message, err := c.ReadMessage()
+		if err != nil {
+			log.Println("read: ", err)
+			return
+		}
+		wgReader.Add(1)
+
+		// dispatch read
+		go singleRead(&wgReader, &message, timestampMap, &mux, toolRtt)
+	}
+	wgReader.Wait()
+}
+
+func singleRead(wgReader *sync.WaitGroup,
+								message *[]byte,
+								timestampMap *map[uint64]time.Time,
+								mux *sync.Mutex,
+								toolRtt *os.File) {
+	defer wgReader.Done()
+	tmpTs := getTimestamp()
+	var jsonMap DataJSON
+	_ = json.Unmarshal(*message, &jsonMap)
+	latency := tmpTs.Sub((*timestampMap)[jsonMap.Id])
+	log.Printf("%d.\t%d.%d ms", jsonMap.Id+1, latency.Milliseconds(), latency%time.Millisecond)
+	serverTs := jsonMap.ServerTimestamp
+	mux.Lock()
+	toolRtt.WriteString(strconv.Itoa(int(latency.Milliseconds())) + "." + strconv.Itoa(int(latency%time.Millisecond)))
+	if serverTs.UnixNano() != 0 {
+		firstLeg := serverTs.Sub((*timestampMap)[jsonMap.Id])
+		secondLeg := tmpTs.Sub(serverTs)
+		toolRtt.WriteString(",")
+		toolRtt.WriteString(strconv.Itoa(int(firstLeg.Milliseconds())) + "." + strconv.Itoa(int(firstLeg%time.Millisecond)))
+		toolRtt.WriteString(",")
+		toolRtt.WriteString(strconv.Itoa(int(secondLeg.Milliseconds())) + "." + strconv.Itoa(int(secondLeg%time.Millisecond)))
+		toolRtt.WriteString(",")
+		toolRtt.WriteString(strconv.Itoa(int(serverTs.UnixNano())))
+	}
+	toolRtt.WriteString("\n")
+	mux.Unlock()
+	delete(*timestampMap, jsonMap.Id)
 }
 
 func sendNTimes(n uint64,
@@ -229,14 +246,16 @@ func infiniteSendLoop(done *chan struct{},
 
 func customPing(address string,
 								wGroup *sync.WaitGroup,
-								done *chan struct{}) {
+								done *chan struct{},
+								outputFile *os.File) {
 	defer wGroup.Done()
+	defer outputFile.Close()
 	for {
 		output, _ := exec.Command("ping", strings.Split(address, ":")[0], "-c 1").Output()
 		rttMs := string(output)
 		if strings.Contains(rttMs, "time=") && strings.Contains(rttMs, " ms") {
-			floatMs, _ := strconv.ParseFloat(rttMs[strings.Index(rttMs, "time=")+5:strings.Index(rttMs, " ms")], 64)
-			log.Println("OS RTT:\t", floatMs)
+			floatMs := rttMs[strings.Index(rttMs, "time=") + 5 : strings.Index(rttMs, " ms")]
+			outputFile.WriteString(floatMs + "\n")
 		}
 		select {
 		case <-*done:
