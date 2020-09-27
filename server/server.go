@@ -5,21 +5,9 @@ import (
 	"flag"
 	"github.com/gorilla/websocket"
 	"log"
-	"math/rand"
 	"net/http"
 	"strconv"
-	"time"
 )
-
-type DataJSON struct {
-	Id      uint64
-	ServerTimestamp time.Time
-	Payload string
-}
-
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 var addr = flag.String("addr", "0.0.0.0:8080", "http service address")
 
@@ -47,8 +35,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 
 	payload := randomString(uint(responseBytes) - 62 /* offset to set the perfect desired message size */)
 
-	log.Println("Connection established with", c.RemoteAddr())
-	log.Println("Response payload size =", responseBytes)
+	printLogs(c.RemoteAddr(), responseBytes)
 
 	defer c.Close()
 	for {
@@ -70,20 +57,4 @@ func echo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-}
-
-func getTimestamp() time.Time {
-	return time.Now()
-}
-
-func stringWithCharset(length uint, charset string) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return string(b)
-}
-
-func randomString(length uint) string {
-	return stringWithCharset(length, charset)
 }
