@@ -53,10 +53,10 @@ func main() {
 	if osRttFileErr != nil {
 		log.Fatalf("failed creating file: %s", osRttFileErr)
 	}
-	/*tcpStats, tcpStatsFileErr := os.Create(LogPath + "tcp-stats_" + *logFile)
+	tcpStats, tcpStatsFileErr := os.Create(LogPath + "tcp-stats_" + *logFile)
 	if tcpStatsFileErr != nil {
 		log.Fatalf("failed creating file: %s", tcpStatsFileErr)
-	}*/
+	}
 
 	timestampMap := make(map[uint64]time.Time)
 	stop := false
@@ -75,8 +75,10 @@ func main() {
 		return
 	}
 
-	wgDispatcher.Add(1)
+	// Parallel os ping and tcp stats handlers
+	wgDispatcher.Add(2)
 	go customPing(address, &wgDispatcher, &done, osRtt)
+	go customSocketStats(address, &wgDispatcher, &done, tcpStats)
 
 	if *reps == 0 {
 		infiniteSendLoop(&done, c, &interrupt, &payload, &timestampMap)
@@ -105,6 +107,23 @@ func customPing(address string,
 		case <-*done:
 			return
 		case <-time.After(time.Duration(*interval) * time.Millisecond):
+		}
+	}
+}
+
+func customSocketStats(address string,
+											 wGroup *sync.WaitGroup,
+											 done *chan struct{},
+											 outputFile *os.File) {
+	defer wGroup.Done()
+	defer outputFile.Close()
+	for {
+		output, _ := exec.Command("ss", "-ti", "dst", strings.Split(address, ":")[0]).Output()
+		outputFile.WriteString(string(output) + "\n")
+		select {
+		case <-*done:
+			return
+		case <-time.After(time.Second):
 		}
 	}
 }
