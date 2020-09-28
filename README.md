@@ -19,7 +19,7 @@ Listening address and port:
 
 ```
 docker pull richimarchi/latency-tester_client
-docker run -p 8080:8080 [--name <container-name>] -v <local-log-folder>:/log richimarchi/latency-tester_client:latest [-reps=<repetitions>] [-requestPayload=<bytes>] [-responsePayload=<bytes>] [-interval=<ms>] [-log=<log-file>] <ip:port>
+docker run -p 8080:8080 [--name <container-name>] -v <local-log-folder>:/tmp richimarchi/latency-tester_client:latest [-reps=<repetitions>] [-requestPayload=<bytes>] [-responsePayload=<bytes>] [-interval=<ms>] [-log=<log-file>] <ip:port>
 ```
 
 #### Default input parameters:

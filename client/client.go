@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const LogPath = "/log/"
+const LogPath = "/tmp/"
 
 var reps = flag.Uint64("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "log.csv", "file to store latency numbers")
