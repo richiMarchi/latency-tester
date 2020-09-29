@@ -9,16 +9,20 @@ import (
 )
 
 func sendNTimes(n uint64,
-		c *websocket.Conn,
-		done *chan struct{},
-		interrupt *chan os.Signal,
-		payload *string,
-		tsMap *map[uint64]time.Time) {
+								c *websocket.Conn,
+								interrupt *chan os.Signal,
+								payload *string,
+								tsMap *map[uint64]time.Time,
+								ssReading *bool,
+								ssHandling *chan bool) {
 	var i uint64
 	for i = 0; i < n; i++ {
 		jsonMap := DataJSON{Id: i, Payload: *payload, ServerTimestamp: time.Time{}}
 		marshal, _ := json.Marshal(jsonMap)
+		*ssReading = true
+		*ssHandling <- true
 		err := c.WriteMessage(websocket.TextMessage, marshal)
+		*ssReading = false
 		(*tsMap)[i] = getTimestamp()
 		if err != nil {
 			log.Println("write: ", err)
@@ -33,10 +37,6 @@ func sendNTimes(n uint64,
 				log.Println("write close: ", err)
 				return
 			}
-			select {
-			case <-*done:
-			case <-time.After(time.Second):
-			}
 			return
 		case <-time.After(time.Duration(*interval) * time.Millisecond):
 		}
@@ -48,26 +48,26 @@ func sendNTimes(n uint64,
 	}
 }
 
-func infiniteSendLoop(done *chan struct{},
-		c *websocket.Conn,
-		interrupt *chan os.Signal,
-		payload *string,
-		tsMap *map[uint64]time.Time) {
+func infiniteSendLoop(c *websocket.Conn,
+											interrupt *chan os.Signal,
+											payload *string,
+											tsMap *map[uint64]time.Time,
+											ssReading *bool,
+											ssHandling *chan bool) {
 
 	ticker := time.NewTicker(time.Duration(*interval) * time.Millisecond)
 	defer ticker.Stop()
 
-	var id uint64
-	id = 0
-
+	var id uint64 = 0
 	for {
 		select {
-		case <-*done:
-			return
 		case <-ticker.C:
 			jsonMap := DataJSON{ Id: id, Payload: *payload, ServerTimestamp: time.Time{}}
 			marshal, _ := json.Marshal(jsonMap)
+			*ssReading = true
+			*ssHandling <- true
 			err := c.WriteMessage(websocket.TextMessage, marshal)
+			*ssReading = false
 			(*tsMap)[id] = getTimestamp()
 			id = id + 1
 			if err != nil {
@@ -81,10 +81,6 @@ func infiniteSendLoop(done *chan struct{},
 			if err != nil {
 				log.Println("write close: ", err)
 				return
-			}
-			select {
-			case <-*done:
-			case <-time.After(time.Second):
 			}
 			return
 		}

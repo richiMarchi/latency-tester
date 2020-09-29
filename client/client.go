@@ -2,8 +2,11 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"github.com/brucespang/go-tcpinfo"
 	"github.com/gorilla/websocket"
 	"log"
+	"net"
 	"net/url"
 	"os"
 	"os/exec"
@@ -43,7 +46,9 @@ func main() {
 	}
 	defer c.Close()
 
-	done := make(chan struct{})
+	doneRead := make(chan struct{})
+	donePing := make(chan struct{})
+	ssHandling := make(chan bool)
 
 	toolRtt, toolFileErr := os.Create(LogPath + "tool-rtt_" + *logFile)
 	if toolFileErr != nil {
@@ -59,13 +64,13 @@ func main() {
 	}
 
 	timestampMap := make(map[uint64]time.Time)
-	stop := false
+	stopRead := false
+	ssReading := false
 
-	var wgDispatcher sync.WaitGroup
-	wgDispatcher.Add(1)
+	var wg sync.WaitGroup
 
-	// Parallel read dispatcher
-	go readDispatcher(c, &stop, &wgDispatcher, &done, toolRtt, &timestampMap)
+	// Parallel read dispatcher and ss handler
+	go readDispatcher(c, &stopRead, &doneRead, toolRtt, &timestampMap)
 
 	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
 
@@ -76,18 +81,24 @@ func main() {
 	}
 
 	// Parallel os ping and tcp stats handlers
-	wgDispatcher.Add(2)
-	go customPing(address, &wgDispatcher, &done, osRtt)
-	go customSocketStats(address, &wgDispatcher, &done, tcpStats)
+	wg.Add(2)
+	go getSocketStats(c.UnderlyingConn().(*net.TCPConn), &ssReading, tcpStats, &wg, &ssHandling)
+	go customPing(address, &wg, &donePing, osRtt)
 
+	// Start making requests
 	if *reps == 0 {
-		infiniteSendLoop(&done, c, &interrupt, &payload, &timestampMap)
+		infiniteSendLoop(c, &interrupt, &payload, &timestampMap, &ssReading, &ssHandling)
 	} else {
-		sendNTimes(*reps, c, &done, &interrupt, &payload, &timestampMap)
+		sendNTimes(*reps, c, &interrupt, &payload, &timestampMap, &ssReading, &ssHandling)
 	}
+	// Stop all go routines
+	stopRead = true
+	close(donePing)
+	ssHandling <- false
 
-	stop = true
-	wgDispatcher.Wait()
+	// Wait for the go routines to complete their job
+	<-doneRead
+	wg.Wait()
 }
 
 func customPing(address string,
@@ -111,19 +122,26 @@ func customPing(address string,
 	}
 }
 
-func customSocketStats(address string,
-											 wGroup *sync.WaitGroup,
-											 done *chan struct{},
-											 outputFile *os.File) {
-	defer wGroup.Done()
+func getSocketStats(conn *net.TCPConn,
+										ssReading *bool,
+										outputFile *os.File,
+										wg *sync.WaitGroup,
+										ssHandling *chan bool) {
+	defer wg.Done()
 	defer outputFile.Close()
-	for {
-		output, _ := exec.Command("ss", "-ti", "dst", strings.Split(address, ":")[0]).Output()
-		outputFile.WriteString(string(output) + "\n")
-		select {
-		case <-*done:
-			return
-		case <-time.After(time.Second):
+	var sockOpt []*tcpinfo.TCPInfo
+	msgId := 1
+	for <- *ssHandling {
+		for *ssReading {
+			tcpInfo, _ := tcpinfo.GetsockoptTCPInfo(conn)
+			sockOpt = append(sockOpt, tcpInfo)
 		}
+		for _, info := range sockOpt {
+			str := fmt.Sprintf("%v", *info)
+			str = strings.ReplaceAll(str[1:len(str) - 1], " ", ",")
+			outputFile.WriteString(strconv.Itoa(msgId) + "," + str + "\n")
+		}
+		sockOpt = sockOpt[:0]
+		msgId += 1
 	}
 }

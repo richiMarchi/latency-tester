@@ -11,12 +11,10 @@ import (
 )
 
 func readDispatcher(c *websocket.Conn,
-		stop *bool,
-		wgDispatcher *sync.WaitGroup,
-		done *chan struct{},
-		toolRtt *os.File,
-		timestampMap *map[uint64]time.Time,) {
-	defer wgDispatcher.Done()
+										stop *bool,
+										done *chan struct{},
+										toolRtt *os.File,
+										timestampMap *map[uint64]time.Time,) {
 	defer close(*done)
 	defer toolRtt.Close()
 
@@ -38,10 +36,10 @@ func readDispatcher(c *websocket.Conn,
 }
 
 func singleRead(wgReader *sync.WaitGroup,
-		message *[]byte,
-		timestampMap *map[uint64]time.Time,
-		mux *sync.Mutex,
-		toolRtt *os.File) {
+								message *[]byte,
+								timestampMap *map[uint64]time.Time,
+								mux *sync.Mutex,
+								toolRtt *os.File) {
 	defer wgReader.Done()
 	tmpTs := getTimestamp()
 	var jsonMap DataJSON
