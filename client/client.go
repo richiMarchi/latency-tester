@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/brucespang/go-tcpinfo"
+	"github.com/google/go-cmp/cmp"
 	"github.com/gorilla/websocket"
+	_ "golang.org/x/xerrors"
 	"log"
 	"net"
 	"net/url"
@@ -136,10 +138,12 @@ func getSocketStats(conn *net.TCPConn,
 			tcpInfo, _ := tcpinfo.GetsockoptTCPInfo(conn)
 			sockOpt = append(sockOpt, tcpInfo)
 		}
-		for _, info := range sockOpt {
-			str := fmt.Sprintf("%v", *info)
-			str = strings.ReplaceAll(str[1:len(str) - 1], " ", ",")
-			outputFile.WriteString(strconv.Itoa(msgId) + "," + str + "\n")
+		for i, info := range sockOpt {
+			if i == 0 || !cmp.Equal(sockOpt[i], sockOpt[i - 1]) {
+				str := fmt.Sprintf("%v", *info)
+				str = strings.ReplaceAll(str[1:len(str)-1], " ", ",")
+				outputFile.WriteString(strconv.Itoa(msgId) + "," + str + "\n")
+			}
 		}
 		sockOpt = sockOpt[:0]
 		msgId += 1
