@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"os"
+	"sync/atomic"
 	"time"
 )
 
@@ -12,18 +13,18 @@ func sendNTimes(n uint64,
 								c *websocket.Conn,
 								interrupt *chan os.Signal,
 								payload *string,
-								tsMap *map[uint64]time.Time,
 								ssReading *bool,
-								ssHandling *chan bool) {
+								ssHandling *chan bool,
+								networkPackets *uint64) {
 	var i uint64
 	for i = 0; i < n; i++ {
-		jsonMap := DataJSON{Id: i, Payload: *payload, ServerTimestamp: time.Time{}}
+		jsonMap := DataJSON{Id: i, Payload: *payload, ClientTimestamp: getTimestamp(), ServerTimestamp: time.Time{}}
 		marshal, _ := json.Marshal(jsonMap)
+		atomic.AddUint64(networkPackets, 1)
 		*ssReading = true
 		*ssHandling <- true
 		err := c.WriteMessage(websocket.TextMessage, marshal)
 		*ssReading = false
-		(*tsMap)[i] = getTimestamp()
 		if err != nil {
 			log.Println("write: ", err)
 			return
@@ -51,9 +52,9 @@ func sendNTimes(n uint64,
 func infiniteSendLoop(c *websocket.Conn,
 											interrupt *chan os.Signal,
 											payload *string,
-											tsMap *map[uint64]time.Time,
 											ssReading *bool,
-											ssHandling *chan bool) {
+											ssHandling *chan bool,
+											networkPackets *uint64) {
 
 	ticker := time.NewTicker(time.Duration(*interval) * time.Millisecond)
 	defer ticker.Stop()
@@ -62,13 +63,13 @@ func infiniteSendLoop(c *websocket.Conn,
 	for {
 		select {
 		case <-ticker.C:
-			jsonMap := DataJSON{ Id: id, Payload: *payload, ServerTimestamp: time.Time{}}
+			jsonMap := DataJSON{ Id: id, Payload: *payload, ClientTimestamp: getTimestamp(), ServerTimestamp: time.Time{}}
 			marshal, _ := json.Marshal(jsonMap)
+			atomic.AddUint64(networkPackets, 1)
 			*ssReading = true
 			*ssHandling <- true
 			err := c.WriteMessage(websocket.TextMessage, marshal)
 			*ssReading = false
-			(*tsMap)[id] = getTimestamp()
 			id = id + 1
 			if err != nil {
 				log.Println("write: ", err)

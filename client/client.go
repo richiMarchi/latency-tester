@@ -56,23 +56,30 @@ func main() {
 	if toolFileErr != nil {
 		log.Fatalf("failed creating file: %s", toolFileErr)
 	}
+	toolRtt.WriteString("# e2e-rtt , client-send-ts , server-ts\n")
 	osRtt, osRttFileErr := os.Create(LogPath + "os-rtt_" + *logFile)
 	if osRttFileErr != nil {
 		log.Fatalf("failed creating file: %s", osRttFileErr)
 	}
+	osRtt.WriteString("# os-rtt , ts\n")
 	tcpStats, tcpStatsFileErr := os.Create(LogPath + "tcp-stats_" + *logFile)
 	if tcpStatsFileErr != nil {
 		log.Fatalf("failed creating file: %s", tcpStatsFileErr)
 	}
+	tcpStats.WriteString("#message-id,state,ca_state,retransmits,probes,backoff,options,pad_cgo_0,rto,ato,snd_mss," +
+		"rcv_mss,unacked,sacked,lost,retrans,fackets,last_data_sent,last_ack_sent,last_data_recv,last_ack_recv,pmtu," +
+		"rcv_ssthresh,rtt,rttvar,snd_ssthresh,snd_cwnd,advmss,reordering,rcv_rtt,rcv_space,total_retrans\n")
 
-	timestampMap := make(map[uint64]time.Time)
 	stopRead := false
 	ssReading := false
 
 	var wg sync.WaitGroup
 
+	// Variable atomically handled in order to keep track of the packets in the network
+	var networkPackets uint64 = 0
+
 	// Parallel read dispatcher and ss handler
-	go readDispatcher(c, &stopRead, &doneRead, toolRtt, &timestampMap)
+	go readDispatcher(c, &stopRead, &doneRead, toolRtt, &networkPackets)
 
 	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
 
@@ -89,9 +96,9 @@ func main() {
 
 	// Start making requests
 	if *reps == 0 {
-		infiniteSendLoop(c, &interrupt, &payload, &timestampMap, &ssReading, &ssHandling)
+		infiniteSendLoop(c, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets)
 	} else {
-		sendNTimes(*reps, c, &interrupt, &payload, &timestampMap, &ssReading, &ssHandling)
+		sendNTimes(*reps, c, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets)
 	}
 	// Stop all go routines
 	stopRead = true
@@ -114,7 +121,7 @@ func customPing(address string,
 		rttMs := string(output)
 		if strings.Contains(rttMs, "time=") && strings.Contains(rttMs, " ms") {
 			floatMs := rttMs[strings.Index(rttMs, "time=") + 5 : strings.Index(rttMs, " ms")]
-			outputFile.WriteString(floatMs + "\n")
+			outputFile.WriteString(floatMs + "," + strconv.FormatInt(getTimestamp().UnixNano(), 10) + "\n")
 		}
 		select {
 		case <-*done:

@@ -9,6 +9,7 @@ import (
 
 type DataJSON struct {
 	Id      uint64
+	ClientTimestamp time.Time
 	ServerTimestamp time.Time
 	Payload string
 }

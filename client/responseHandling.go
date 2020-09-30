@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -14,14 +15,14 @@ func readDispatcher(c *websocket.Conn,
 										stop *bool,
 										done *chan struct{},
 										toolRtt *os.File,
-										timestampMap *map[uint64]time.Time,) {
+										networkPackets *uint64) {
 	defer close(*done)
 	defer toolRtt.Close()
 
 	var wgReader sync.WaitGroup
 	var mux sync.Mutex
 
-	for !*stop || len(*timestampMap) > 1 {
+	for !*stop || atomic.LoadUint64(networkPackets) > 0 {
 		_, message, err := c.ReadMessage()
 		if err != nil {
 			log.Println("read: ", err)
@@ -30,36 +31,27 @@ func readDispatcher(c *websocket.Conn,
 		wgReader.Add(1)
 
 		// dispatch read
-		go singleRead(&wgReader, &message, timestampMap, &mux, toolRtt)
+		go singleRead(&wgReader, &message, &mux, toolRtt)
+		atomic.AddUint64(networkPackets, ^uint64(0))
 	}
 	wgReader.Wait()
 }
 
 func singleRead(wgReader *sync.WaitGroup,
 								message *[]byte,
-								timestampMap *map[uint64]time.Time,
 								mux *sync.Mutex,
 								toolRtt *os.File) {
 	defer wgReader.Done()
-	tmpTs := getTimestamp()
 	var jsonMap DataJSON
 	_ = json.Unmarshal(*message, &jsonMap)
-	latency := tmpTs.Sub((*timestampMap)[jsonMap.Id])
+	latency := getTimestamp().Sub(jsonMap.ClientTimestamp)
 	log.Printf("%d.\t%d.%d ms", jsonMap.Id+1, latency.Milliseconds(), latency%time.Millisecond)
-	serverTs := jsonMap.ServerTimestamp
 	mux.Lock()
-	toolRtt.WriteString(strconv.Itoa(int(latency.Milliseconds())) + "." + strconv.Itoa(int(latency%time.Millisecond)))
-	if serverTs.UnixNano() != 0 {
-		firstLeg := serverTs.Sub((*timestampMap)[jsonMap.Id])
-		secondLeg := tmpTs.Sub(serverTs)
-		toolRtt.WriteString(",")
-		toolRtt.WriteString(strconv.Itoa(int(firstLeg.Milliseconds())) + "." + strconv.Itoa(int(firstLeg%time.Millisecond)))
-		toolRtt.WriteString(",")
-		toolRtt.WriteString(strconv.Itoa(int(secondLeg.Milliseconds())) + "." + strconv.Itoa(int(secondLeg%time.Millisecond)))
-		toolRtt.WriteString(",")
-		toolRtt.WriteString(strconv.Itoa(int(serverTs.UnixNano())))
-	}
+	toolRtt.WriteString(strconv.FormatInt(latency.Milliseconds(), 10) + "." + strconv.Itoa(int(latency%time.Millisecond)))
+	toolRtt.WriteString(",")
+	toolRtt.WriteString(strconv.FormatInt(jsonMap.ClientTimestamp.UnixNano(), 10))
+	toolRtt.WriteString(",")
+	toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.UnixNano(), 10))
 	toolRtt.WriteString("\n")
 	mux.Unlock()
-	delete(*timestampMap, jsonMap.Id)
 }
