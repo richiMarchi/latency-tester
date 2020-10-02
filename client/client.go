@@ -26,6 +26,7 @@ var logFile = flag.String("log", "log.csv", "file to store latency numbers")
 var requestBytes = flag.Uint("requestPayload", 64, "bytes of the payload")
 var responseBytes = flag.Uint("responsePayload", 64, "bytes of the response payload")
 var interval = flag.Uint("interval", 1000, "send interval time (ms)")
+var pingIp = flag.String("pingIp", "", "ip to ping")
 
 func main() {
 	flag.Parse()
@@ -33,6 +34,19 @@ func main() {
 	log.SetFlags(0)
 	if *requestBytes < 62 || *responseBytes < 62 {
 		log.Fatal("Minimum payload size: 62")
+	}
+
+	destIp := strings.Split(address, ":")[0]
+	if net.ParseIP(destIp) == nil {
+		log.Fatal("Invalid IP address")
+	}
+
+	if *pingIp == "" {
+		*pingIp = destIp
+	}
+
+	if net.ParseIP(*pingIp) == nil {
+		log.Fatal("Absent or invalid pingIp")
 	}
 
 	printLogs(*reps, *logFile, *requestBytes, *responseBytes, *interval, address)
@@ -92,7 +106,7 @@ func main() {
 	// Parallel os ping and tcp stats handlers
 	wg.Add(2)
 	go getSocketStats(c.UnderlyingConn().(*net.TCPConn), &ssReading, tcpStats, &wg, &ssHandling)
-	go customPing(address, &wg, &donePing, osRtt)
+	go customPing(*pingIp, &wg, &donePing, osRtt)
 
 	// Start making requests
 	if *reps == 0 {
@@ -110,14 +124,14 @@ func main() {
 	wg.Wait()
 }
 
-func customPing(address string,
+func customPing(pingIp string,
 								wGroup *sync.WaitGroup,
 								done *chan struct{},
 								outputFile *os.File) {
 	defer wGroup.Done()
 	defer outputFile.Close()
 	for {
-		output, _ := exec.Command("ping", strings.Split(address, ":")[0], "-c 1").Output()
+		output, _ := exec.Command("ping", pingIp, "-c 1").Output()
 		rttMs := string(output)
 		if strings.Contains(rttMs, "time=") && strings.Contains(rttMs, " ms") {
 			floatMs := rttMs[strings.Index(rttMs, "time=") + 5 : strings.Index(rttMs, " ms")]
