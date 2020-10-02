@@ -83,6 +83,10 @@ func main() {
 	tcpStats.WriteString("#message-id,state,ca_state,retransmits,probes,backoff,options,pad_cgo_0,rto,ato,snd_mss," +
 		"rcv_mss,unacked,sacked,lost,retrans,fackets,last_data_sent,last_ack_sent,last_data_recv,last_ack_recv,pmtu," +
 		"rcv_ssthresh,rtt,rttvar,snd_ssthresh,snd_cwnd,advmss,reordering,rcv_rtt,rcv_space,total_retrans\n")
+	tracerouteFile, tracerouteFileErr := os.Create(LogPath + "traceroute_" + *logFile)
+	if tracerouteFileErr != nil {
+		log.Fatalf("failed creating file: %s", tracerouteFileErr)
+	}
 
 	stopRead := false
 	ssReading := false
@@ -104,8 +108,9 @@ func main() {
 	}
 
 	// Parallel os ping and tcp stats handlers
-	wg.Add(2)
+	wg.Add(3)
 	go getSocketStats(c.UnderlyingConn().(*net.TCPConn), &ssReading, tcpStats, &wg, &ssHandling)
+	go customTraceroute(*pingIp, &wg, tracerouteFile)
 	go customPing(*pingIp, &wg, &donePing, osRtt)
 
 	// Start making requests
@@ -121,7 +126,17 @@ func main() {
 
 	// Wait for the go routines to complete their job
 	<-doneRead
+	log.Println("Waiting for the routines to complete their tasks...")
 	wg.Wait()
+}
+
+func customTraceroute(tracerouteIp string,
+											wGroup *sync.WaitGroup,
+											outputFile *os.File) {
+	defer wGroup.Done()
+	defer outputFile.Close()
+	output, _ := exec.Command("traceroute", tracerouteIp).Output()
+	outputFile.WriteString(string(output))
 }
 
 func customPing(pingIp string,
