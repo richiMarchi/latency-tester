@@ -70,12 +70,12 @@ func main() {
 	if toolFileErr != nil {
 		log.Fatalf("failed creating file: %s", toolFileErr)
 	}
-	toolRtt.WriteString("# e2e-rtt , client-send-ts , server-ts\n")
+	toolRtt.WriteString("#e2e-rtt,client-send-ts,server-ts\n")
 	osRtt, osRttFileErr := os.Create(LogPath + "os-rtt_" + *logFile)
 	if osRttFileErr != nil {
 		log.Fatalf("failed creating file: %s", osRttFileErr)
 	}
-	osRtt.WriteString("# os-rtt , ts\n")
+	osRtt.WriteString("#os-rtt,ts\n")
 	tcpStats, tcpStatsFileErr := os.Create(LogPath + "tcp-stats_" + *logFile)
 	if tcpStatsFileErr != nil {
 		log.Fatalf("failed creating file: %s", tcpStatsFileErr)
