@@ -2,88 +2,82 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/gorilla/websocket"
 	"log"
 	"os"
-	"sync/atomic"
 	"time"
 )
 
 func sendNTimes(n uint64,
-								c *websocket.Conn,
+								encoder *json.Encoder,
 								interrupt *chan os.Signal,
 								payload *string,
 								ssReading *bool,
-								ssHandling *chan bool,
-								networkPackets *uint64) {
+								ssHandling *chan bool) {
 	var i uint64
-	for i = 0; i < n; i++ {
+	for i = 1; i < n; i++ {
 		jsonMap := DataJSON{Id: i, Payload: *payload, ClientTimestamp: getTimestamp(), ServerTimestamp: time.Time{}}
-		marshal, _ := json.Marshal(jsonMap)
-		atomic.AddUint64(networkPackets, 1)
 		*ssReading = true
 		*ssHandling <- true
-		err := c.WriteMessage(websocket.TextMessage, marshal)
+		err := encoder.Encode(&jsonMap)
 		*ssReading = false
 		if err != nil {
 			log.Println("write: ", err)
+			gracefulSocketClose(encoder)
 			return
 		}
 		select {
 		case <-*interrupt:
 			log.Println("interrupt")
-
-			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			if err != nil {
-				log.Println("write close: ", err)
-				return
-			}
+			gracefulSocketClose(encoder)
 			return
 		case <-time.After(time.Duration(*interval) * time.Millisecond):
 		}
 	}
-	err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	jsonMap := DataJSON{Id: 0}
+	err := encoder.Encode(&jsonMap)
 	if err != nil {
-		log.Println("write close: ", err)
+		log.Println("write: ", err)
 		return
 	}
 }
 
-func infiniteSendLoop(c *websocket.Conn,
+func infiniteSendLoop(encoder *json.Encoder,
 											interrupt *chan os.Signal,
 											payload *string,
 											ssReading *bool,
-											ssHandling *chan bool,
-											networkPackets *uint64) {
+											ssHandling *chan bool) {
 
 	ticker := time.NewTicker(time.Duration(*interval) * time.Millisecond)
 	defer ticker.Stop()
 
-	var id uint64 = 0
+	var id uint64 = 1
 	for {
 		select {
 		case <-ticker.C:
 			jsonMap := DataJSON{ Id: id, Payload: *payload, ClientTimestamp: getTimestamp(), ServerTimestamp: time.Time{}}
-			marshal, _ := json.Marshal(jsonMap)
-			atomic.AddUint64(networkPackets, 1)
 			*ssReading = true
 			*ssHandling <- true
-			err := c.WriteMessage(websocket.TextMessage, marshal)
+			err := encoder.Encode(&jsonMap)
 			*ssReading = false
 			id = id + 1
 			if err != nil {
 				log.Println("write: ", err)
+				gracefulSocketClose(encoder)
 				return
 			}
 		case <-*interrupt:
 			log.Println("interrupt")
-
-			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			if err != nil {
-				log.Println("write close: ", err)
-				return
-			}
+			gracefulSocketClose(encoder)
 			return
 		}
+	}
+}
+
+func gracefulSocketClose(encoder *json.Encoder) {
+	jsonMap := DataJSON{Id: 0}
+	err := encoder.Encode(&jsonMap)
+	if err != nil {
+		log.Println("write: ", err)
+		return
 	}
 }

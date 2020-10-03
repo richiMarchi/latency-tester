@@ -1,15 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/brucespang/go-tcpinfo"
 	"github.com/google/go-cmp/cmp"
-	"github.com/gorilla/websocket"
 	_ "golang.org/x/xerrors"
 	"log"
 	"net"
-	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -54,13 +53,10 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	u := url.URL{Scheme: "ws", Host: address, Path: "/echo"}
-
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	c, err := net.Dial("tcp", address)
 	if err != nil {
 		log.Fatal("dial: ", err)
 	}
-	defer c.Close()
 
 	doneRead := make(chan struct{})
 	donePing := make(chan struct{})
@@ -88,20 +84,19 @@ func main() {
 		log.Fatalf("failed creating file: %s", tracerouteFileErr)
 	}
 
-	stopRead := false
+	encoder := json.NewEncoder(c)
+	decoder := json.NewDecoder(c)
+
 	ssReading := false
 
 	var wg sync.WaitGroup
 
-	// Variable atomically handled in order to keep track of the packets in the network
-	var networkPackets uint64 = 0
-
 	// Parallel read dispatcher and ss handler
-	go readDispatcher(c, &stopRead, &doneRead, toolRtt, &networkPackets)
+	go readDispatcher(decoder, &doneRead, toolRtt)
 
 	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
 
-	resErr := c.WriteMessage(websocket.TextMessage, []byte(strconv.Itoa(int(*responseBytes))))
+	resErr := encoder.Encode(responseBytes)
 	if resErr != nil {
 		log.Println("write: ", resErr)
 		return
@@ -109,18 +104,17 @@ func main() {
 
 	// Parallel os ping and tcp stats handlers
 	wg.Add(3)
-	go getSocketStats(c.UnderlyingConn().(*net.TCPConn), &ssReading, tcpStats, &wg, &ssHandling)
+	go getSocketStats(c.(*net.TCPConn), &ssReading, tcpStats, &wg, &ssHandling)
 	go customTraceroute(*pingIp, &wg, tracerouteFile)
 	go customPing(*pingIp, &wg, &donePing, osRtt)
 
 	// Start making requests
 	if *reps == 0 {
-		infiniteSendLoop(c, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets)
+		infiniteSendLoop(encoder, &interrupt, &payload, &ssReading, &ssHandling)
 	} else {
-		sendNTimes(*reps, c, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets)
+		sendNTimes(*reps, encoder, &interrupt, &payload, &ssReading, &ssHandling)
 	}
 	// Stop all go routines
-	stopRead = true
 	close(donePing)
 	ssHandling <- false
 

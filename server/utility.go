@@ -34,7 +34,7 @@ func randomString(length uint) string {
 }
 
 func printLogs(addr net.Addr,
-							 responseBytes int) {
+							 responseBytes uint) {
 	log.Println("Connection established with", addr)
 	log.Println("Response payload size =", responseBytes)
 }

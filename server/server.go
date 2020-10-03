@@ -3,54 +3,55 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"github.com/gorilla/websocket"
 	"log"
-	"net/http"
-	"strconv"
+	"net"
 )
 
 var addr = flag.String("addr", "0.0.0.0:8080", "http service address")
 
-var upgrader = websocket.Upgrader{}
-
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
-	http.HandleFunc("/echo", echo)
-	log.Fatal(http.ListenAndServe(*addr, nil))
+	ln, err := net.Listen("tcp", *addr)
+	if err != nil {
+		log.Fatalf("Error in net.Listen: %s", err)
+	}
+	for {
+		conn, connErr := ln.Accept()
+		if connErr != nil {
+			log.Fatalf("Error in Accept() method: %s", connErr)
+		}
+		handleConnection(conn)
+	}
 }
 
-func echo(w http.ResponseWriter, r *http.Request) {
-	c, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Print("upgrade: ", err)
-		return
-	}
-	_, msg, resErr := c.ReadMessage()
+func handleConnection(c net.Conn) {
+	decoder := json.NewDecoder(c)
+	encoder := json.NewEncoder(c)
+
+	var responseBytes uint
+	resErr := decoder.Decode(&responseBytes)
 	if resErr != nil {
 		log.Println("read: ", resErr)
 		return
 	}
-	responseBytes, _ := strconv.Atoi(string(msg))
 
-	payload := randomString(uint(responseBytes) - 62 /* offset to set the perfect desired message size */)
+	payload := randomString(responseBytes - 62 /* offset to set the perfect desired message size */)
 
 	printLogs(c.RemoteAddr(), responseBytes)
 
 	defer c.Close()
 	for {
-		mt, message, err := c.ReadMessage()
+		var jsonMap DataJSON
+		err := decoder.Decode(&jsonMap)
 		if err != nil {
 			log.Println("read: ", err)
 			log.Println()
 			return
 		}
-		var jsonMap DataJSON
-		_ = json.Unmarshal(message, &jsonMap)
 		jsonMap.ServerTimestamp = getTimestamp()
 		jsonMap.Payload = payload
-		message, _ = json.Marshal(jsonMap)
-		err = c.WriteMessage(mt, message)
+		err = encoder.Encode(&jsonMap)
 		log.Printf("recv: ACK")
 		if err != nil {
 			log.Println("write: ", err)

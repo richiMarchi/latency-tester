@@ -2,50 +2,48 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/gorilla/websocket"
 	"log"
 	"os"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
-func readDispatcher(c *websocket.Conn,
-										stop *bool,
+func readDispatcher(decoder *json.Decoder,
 										done *chan struct{},
-										toolRtt *os.File,
-										networkPackets *uint64) {
+										toolRtt *os.File) {
 	defer close(*done)
 	defer toolRtt.Close()
 
 	var wgReader sync.WaitGroup
 	var mux sync.Mutex
 
-	for !*stop || atomic.LoadUint64(networkPackets) > 0 {
-		_, message, err := c.ReadMessage()
+	for {
+		var message DataJSON
+		err := decoder.Decode(&message)
 		if err != nil {
 			log.Println("read: ", err)
+			return
+		}
+		if message.Id == 0 {
+			log.Println("Closing socket")
+			wgReader.Wait()
 			return
 		}
 		wgReader.Add(1)
 
 		// dispatch read
 		go singleRead(&wgReader, &message, &mux, toolRtt)
-		atomic.AddUint64(networkPackets, ^uint64(0))
 	}
-	wgReader.Wait()
 }
 
 func singleRead(wgReader *sync.WaitGroup,
-								message *[]byte,
+								jsonMap *DataJSON,
 								mux *sync.Mutex,
 								toolRtt *os.File) {
 	defer wgReader.Done()
-	var jsonMap DataJSON
-	_ = json.Unmarshal(*message, &jsonMap)
 	latency := getTimestamp().Sub(jsonMap.ClientTimestamp)
-	log.Printf("%d.\t%d.%d ms", jsonMap.Id+1, latency.Milliseconds(), latency%time.Millisecond)
+	log.Printf("%d.\t%d.%d ms", jsonMap.Id, latency.Milliseconds(), latency%time.Millisecond)
 	mux.Lock()
 	toolRtt.WriteString(strconv.FormatInt(latency.Milliseconds(), 10) + "." + strconv.Itoa(int(latency%time.Millisecond)))
 	toolRtt.WriteString(",")
