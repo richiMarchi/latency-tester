@@ -1,5 +1,7 @@
 FROM golang
 
+RUN apt-get update && apt-get install -y traceroute
+
 # Copy everything from the current directory to the PWD(Present Working Directory) inside the container
 COPY . .
 
