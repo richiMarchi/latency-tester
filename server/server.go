@@ -10,6 +10,7 @@ import (
 )
 
 var addr = flag.String("addr", "0.0.0.0:8080", "http service address")
+var tls = flag.Bool("tls", false, "true if tls server")
 
 var upgrader = websocket.Upgrader{}
 
@@ -17,7 +18,12 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 	http.HandleFunc("/echo", echo)
-	log.Fatal(http.ListenAndServe(*addr, nil))
+	log.Println("Listening to", *addr, "\nTLS enabled:", *tls)
+	if *tls {
+		log.Fatal(http.ListenAndServeTLS(*addr, "server.crt", "server.key", nil))
+	} else {
+		log.Fatal(http.ListenAndServe(*addr, nil))
+	}
 }
 
 func echo(w http.ResponseWriter, r *http.Request) {
