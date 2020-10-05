@@ -3,21 +3,15 @@ package main
 import (
 	"crypto/tls"
 	"flag"
-	"fmt"
-	"github.com/brucespang/go-tcpinfo"
-	"github.com/google/go-cmp/cmp"
 	"github.com/gorilla/websocket"
 	_ "golang.org/x/xerrors"
 	"log"
 	"net"
 	"net/url"
 	"os"
-	"os/exec"
 	"os/signal"
 	"strconv"
-	"strings"
 	"sync"
-	"time"
 )
 
 const LogPath = "/tmp/"
@@ -42,7 +36,7 @@ func main() {
 		log.Fatalf("Ip to ping required")
 	}
 
-	printLogs(*reps, *logFile, *requestBytes, *responseBytes, *interval, address)
+	printLogs(*reps, *requestBytes, *responseBytes, *interval, *pingIp, *https, address)
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
@@ -94,6 +88,11 @@ func main() {
 		log.Fatalf("failed creating file: %s", tracerouteFileErr)
 	}
 
+	log.Println("Starting traceroute to", *pingIp + "...")
+	customTraceroute(*pingIp, tracerouteFile)
+	log.Println("Traceroute completed!")
+	log.Println()
+
 	stopRead := false
 	ssReading := false
 
@@ -114,14 +113,13 @@ func main() {
 	}
 
 	// Parallel os ping and tcp stats handlers
-	wg.Add(3)
+	wg.Add(2)
 	if *https {
 		go getSocketStats(getConnFromTLSConn(conn.UnderlyingConn().(*tls.Conn)).(*net.TCPConn),
 			&ssReading, tcpStats, &wg, &ssHandling)
 	} else {
 		go getSocketStats(conn.UnderlyingConn().(*net.TCPConn), &ssReading, tcpStats, &wg, &ssHandling)
 	}
-	go customTraceroute(*pingIp, &wg, tracerouteFile)
 	go customPing(*pingIp, &wg, &donePing, osRtt)
 
 	// Start making requests
@@ -137,62 +135,7 @@ func main() {
 
 	// Wait for the go routines to complete their job
 	<-doneRead
-	log.Println("Waiting for the routines to complete their tasks...")
 	wg.Wait()
-}
-
-func customTraceroute(tracerouteIp string,
-											wGroup *sync.WaitGroup,
-											outputFile *os.File) {
-	defer wGroup.Done()
-	defer outputFile.Close()
-	output, _ := exec.Command("traceroute", tracerouteIp).Output()
-	outputFile.WriteString(string(output))
-}
-
-func customPing(pingIp string,
-								wGroup *sync.WaitGroup,
-								done *chan struct{},
-								outputFile *os.File) {
-	defer wGroup.Done()
-	defer outputFile.Close()
-	for {
-		output, _ := exec.Command("ping", pingIp, "-c 1").Output()
-		rttMs := string(output)
-		if strings.Contains(rttMs, "time=") && strings.Contains(rttMs, " ms") {
-			floatMs := rttMs[strings.Index(rttMs, "time=") + 5 : strings.Index(rttMs, " ms")]
-			outputFile.WriteString(floatMs + "," + strconv.FormatInt(getTimestamp().UnixNano(), 10) + "\n")
-		}
-		select {
-		case <-*done:
-			return
-		case <-time.After(time.Duration(*interval) * time.Millisecond):
-		}
-	}
-}
-
-func getSocketStats(conn *net.TCPConn,
-										ssReading *bool,
-										outputFile *os.File,
-										wg *sync.WaitGroup,
-										ssHandling *chan bool) {
-	defer wg.Done()
-	defer outputFile.Close()
-	var sockOpt []*tcpinfo.TCPInfo
-	msgId := 1
-	for <- *ssHandling {
-		for *ssReading {
-			tcpInfo, _ := tcpinfo.GetsockoptTCPInfo(conn)
-			sockOpt = append(sockOpt, tcpInfo)
-		}
-		for i, info := range sockOpt {
-			if i == 0 || !cmp.Equal(sockOpt[i], sockOpt[i - 1]) {
-				str := fmt.Sprintf("%v", *info)
-				str = strings.ReplaceAll(str[1:len(str)-1], " ", ",")
-				outputFile.WriteString(strconv.Itoa(msgId) + "," + str + "\n")
-			}
-		}
-		sockOpt = sockOpt[:0]
-		msgId += 1
-	}
+	log.Println()
+	log.Println("Everything is completed!")
 }

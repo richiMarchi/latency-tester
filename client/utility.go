@@ -37,17 +37,19 @@ func randomString(length uint) string {
 }
 
 func printLogs(reps uint64,
-							 logFile string,
 							 requestBytes uint,
 							 responseBytes uint,
 							 interval uint,
+							 pingIp string,
+							 tls bool,
 							 address string) {
-	log.Println("Repetitions:\t", reps)
-	log.Println("Log File:\t", LogPath + logFile)
-	log.Println("Request Bytes:\t", requestBytes)
-	log.Println("Response Bytes:\t", responseBytes)
-	log.Println("Send Interval:\t", interval)
-	log.Println("Address:\t", address)
+	log.Println("Repetitions:\t\t", reps)
+	log.Println("Request Bytes:\t\t", requestBytes)
+	log.Println("Response Bytes:\t\t", responseBytes)
+	log.Println("Send Interval:\t\t", interval)
+	log.Println("Ping and Traceroute IP:\t", pingIp)
+	log.Println("TLS enabled:\t\t", tls)
+	log.Println("Address:\t\t", address)
 	log.Println()
 }
 
