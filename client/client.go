@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"github.com/brucespang/go-tcpinfo"
@@ -27,6 +28,7 @@ var requestBytes = flag.Uint("requestPayload", 64, "bytes of the payload")
 var responseBytes = flag.Uint("responsePayload", 64, "bytes of the response payload")
 var interval = flag.Uint("interval", 1000, "send interval time (ms)")
 var pingIp = flag.String("pingIp", "", "ip to ping")
+var https = flag.Bool("tls", false, "true if tls enabled")
 
 func main() {
 	flag.Parse()
@@ -36,17 +38,8 @@ func main() {
 		log.Fatal("Minimum payload size: 62")
 	}
 
-	destIp := strings.Split(address, ":")[0]
-	if net.ParseIP(destIp) == nil {
-		log.Fatal("Invalid IP address")
-	}
-
 	if *pingIp == "" {
-		*pingIp = destIp
-	}
-
-	if net.ParseIP(*pingIp) == nil {
-		log.Fatal("Absent or invalid pingIp")
+		log.Fatalf("Ip to ping required")
 	}
 
 	printLogs(*reps, *logFile, *requestBytes, *responseBytes, *interval, address)
@@ -54,13 +47,26 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	u := url.URL{Scheme: "ws", Host: address, Path: "/echo"}
-
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-	if err != nil {
-		log.Fatal("dial: ", err)
+	var u url.URL
+	var conn *websocket.Conn
+	if *https {
+		conf := &tls.Config{ InsecureSkipVerify: true }
+		dialer := websocket.Dialer{ TLSClientConfig: conf }
+		u = url.URL{Scheme: "wss", Host: address, Path: "/echo"}
+		c, _, err := dialer.Dial(u.String(), nil)
+		if err != nil {
+			log.Fatal("dial: ", err)
+		}
+		conn = c
+	} else {
+		u = url.URL{Scheme: "ws", Host: address, Path: "/echo"}
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		if err != nil {
+			log.Fatal("dial: ", err)
+		}
+		conn = c
 	}
-	defer c.Close()
+	defer conn.Close()
 
 	doneRead := make(chan struct{})
 	donePing := make(chan struct{})
@@ -97,11 +103,11 @@ func main() {
 	var networkPackets uint64 = 0
 
 	// Parallel read dispatcher and ss handler
-	go readDispatcher(c, &stopRead, &doneRead, toolRtt, &networkPackets)
+	go readDispatcher(conn, &stopRead, &doneRead, toolRtt, &networkPackets)
 
 	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
 
-	resErr := c.WriteMessage(websocket.TextMessage, []byte(strconv.Itoa(int(*responseBytes))))
+	resErr := conn.WriteMessage(websocket.TextMessage, []byte(strconv.Itoa(int(*responseBytes))))
 	if resErr != nil {
 		log.Println("write: ", resErr)
 		return
@@ -109,15 +115,20 @@ func main() {
 
 	// Parallel os ping and tcp stats handlers
 	wg.Add(3)
-	go getSocketStats(c.UnderlyingConn().(*net.TCPConn), &ssReading, tcpStats, &wg, &ssHandling)
+	if *https {
+		go getSocketStats(getConnFromTLSConn(conn.UnderlyingConn().(*tls.Conn)).(*net.TCPConn),
+			&ssReading, tcpStats, &wg, &ssHandling)
+	} else {
+		go getSocketStats(conn.UnderlyingConn().(*net.TCPConn), &ssReading, tcpStats, &wg, &ssHandling)
+	}
 	go customTraceroute(*pingIp, &wg, tracerouteFile)
 	go customPing(*pingIp, &wg, &donePing, osRtt)
 
 	// Start making requests
 	if *reps == 0 {
-		infiniteSendLoop(c, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets)
+		infiniteSendLoop(conn, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets)
 	} else {
-		sendNTimes(*reps, c, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets)
+		sendNTimes(*reps, conn, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets)
 	}
 	// Stop all go routines
 	stopRead = true
