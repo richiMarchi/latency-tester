@@ -1,9 +1,13 @@
 package main
 
 import (
+	"crypto/tls"
 	"log"
 	"math/rand"
+	"net"
+	"reflect"
 	"time"
+	"unsafe"
 )
 
 type DataJSON struct {
@@ -45,4 +49,12 @@ func printLogs(reps uint64,
 	log.Println("Send Interval:\t", interval)
 	log.Println("Address:\t", address)
 	log.Println()
+}
+
+// to get the internal wrapped connection from the tls.Conn
+func getConnFromTLSConn(tlsConn *tls.Conn) net.Conn {
+	// awful workaround until https://github.com/golang/go/issues/29257 is solved.
+	conn := reflect.ValueOf(tlsConn).Elem().FieldByName("conn")
+	conn = reflect.NewAt(conn.Type(), unsafe.Pointer(conn.UnsafeAddr())).Elem()
+	return conn.Interface().(net.Conn)
 }
