@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: latency-tester
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: latency-tester
+  namespace: latency-tester
+  labels:
+    app.kubernetes.io/name: latency-tester
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: latency-tester
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: latency-tester
+    spec:
+      containers:
+      - name: latency-tester
+        image: richimarchi/latency-tester_server
+        args:
+        - -tls=true
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: latency-tester
+  namespace: latency-tester
+spec:
+  selector:
+    app.kubernetes.io/name: latency-tester
+  ports:
+  - port: 8080
+    name: latency-tester
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/secure-backends: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  labels:
+    app.kubernetes.io/name: latency-tester
+  name: latency-tester
+  namespace: latency-tester
+spec:
+  rules:
+  - host: latency-tester.crownlabs.polito.it
+    http:
+      paths:
+        - backend:
+            serviceName: latency-tester
+            servicePort: latency-tester
+          path: /
+  tls:
+    - hosts:
+      - latency-tester.crownlabs.polito.it
+      secretName: latency-tester-tls
