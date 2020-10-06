@@ -18,9 +18,9 @@ const LogPath = "/tmp/"
 
 var reps = flag.Uint64("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "log", "file to store latency numbers")
-var requestBytes = flag.Uint("requestPayload", 64, "bytes of the payload")
-var responseBytes = flag.Uint("responsePayload", 64, "bytes of the response payload")
-var interval = flag.Uint("interval", 1000, "send interval time (ms)")
+var requestBytes = flag.Uint64("requestPayload", 64, "bytes of the payload")
+var responseBytes = flag.Uint64("responsePayload", 64, "bytes of the response payload")
+var interval = flag.Uint64("interval", 1000, "send interval time (ms)")
 var https = flag.Bool("tls", false, "true if tls enabled")
 var traceroute = flag.Bool("traceroute", false, "true if traceroute requested")
 
@@ -115,7 +115,7 @@ func main() {
 
 	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
 
-	resErr := conn.WriteMessage(websocket.TextMessage, []byte(strconv.Itoa(int(*responseBytes))))
+	resErr := conn.WriteMessage(websocket.TextMessage, []byte(strconv.FormatUint(*responseBytes, 10)))
 	if resErr != nil {
 		log.Println("write: ", resErr)
 		return

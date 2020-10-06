@@ -25,7 +25,7 @@ func getTimestamp() time.Time {
 	return time.Now()
 }
 
-func stringWithCharset(length uint, charset string) string {
+func stringWithCharset(length uint64, charset string) string {
 	b := make([]byte, length)
 	for i := range b {
 		b[i] = charset[seededRand.Intn(len(charset))]
@@ -33,14 +33,14 @@ func stringWithCharset(length uint, charset string) string {
 	return string(b)
 }
 
-func randomString(length uint) string {
+func randomString(length uint64) string {
 	return stringWithCharset(length, charset)
 }
 
 func printLogs(reps uint64,
-	requestBytes uint,
-	responseBytes uint,
-	interval uint,
+	requestBytes uint64,
+	responseBytes uint64,
+	interval uint64,
 	tls bool,
 	traceroute bool,
 	address string,
