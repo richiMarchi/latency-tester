@@ -21,23 +21,27 @@ var logFile = flag.String("log", "log", "file to store latency numbers")
 var requestBytes = flag.Uint("requestPayload", 64, "bytes of the payload")
 var responseBytes = flag.Uint("responsePayload", 64, "bytes of the response payload")
 var interval = flag.Uint("interval", 1000, "send interval time (ms)")
-var pingIp = flag.String("pingIp", "", "ip to ping")
 var https = flag.Bool("tls", false, "true if tls enabled")
 var traceroute = flag.Bool("traceroute", false, "true if traceroute requested")
 
 func main() {
 	flag.Parse()
 	address := flag.Arg(0)
+	pingIp := flag.Arg(1)
 	log.SetFlags(0)
 	if *requestBytes < 62 || *responseBytes < 62 {
 		log.Fatal("Minimum payload size: 62")
 	}
 
-	if *pingIp == "" {
-		log.Fatalf("Ip to ping required")
+	if address == "" {
+		log.Fatal("Server address required")
 	}
 
-	printLogs(*reps, *requestBytes, *responseBytes, *interval, *pingIp, *https, *traceroute, address)
+	if pingIp == "" {
+		log.Fatal("Address to ping required")
+	}
+
+	printLogs(*reps, *requestBytes, *responseBytes, *interval, *https, *traceroute, address, pingIp)
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
@@ -92,8 +96,8 @@ func main() {
 			log.Fatalf("failed creating file: %s", tracerouteFileErr)
 		}
 
-		log.Println("Starting traceroute to", *pingIp+"...")
-		customTraceroute(*pingIp, tracerouteFile)
+		log.Println("Starting traceroute to", pingIp+"...")
+		customTraceroute(pingIp, tracerouteFile)
 		log.Println("Traceroute completed!")
 		log.Println()
 	}
@@ -125,7 +129,7 @@ func main() {
 	} else {
 		go getSocketStats(conn.UnderlyingConn().(*net.TCPConn), &ssReading, tcpStats, &wg, &ssHandling)
 	}
-	go customPing(*pingIp, &wg, &donePing, osRtt)
+	go customPing(pingIp, &wg, &donePing, osRtt)
 
 	// Start making requests
 	if *reps == 0 {

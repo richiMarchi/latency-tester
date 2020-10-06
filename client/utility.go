@@ -41,18 +41,18 @@ func printLogs(reps uint64,
 	requestBytes uint,
 	responseBytes uint,
 	interval uint,
-	pingIp string,
 	tls bool,
 	traceroute bool,
-	address string) {
+	address string,
+	pingIp string) {
 	log.Println("Repetitions:\t\t", reps)
 	log.Println("Request Bytes:\t\t", requestBytes)
 	log.Println("Response Bytes:\t\t", responseBytes)
 	log.Println("Send Interval:\t\t", interval)
-	log.Println("Ping and Traceroute IP:\t", pingIp)
 	log.Println("TLS enabled:\t\t", tls)
 	log.Println("Traceroute enabled:\t", traceroute)
 	log.Println("Address:\t\t", address)
+	log.Println("Ping and Traceroute IP:\t", pingIp)
 	log.Println()
 }
 
