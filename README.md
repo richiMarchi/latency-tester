@@ -47,3 +47,16 @@ Traceroute enabled:
 
 Log file name:
 `-log` = `log`
+
+
+## How to deploy the server into a Kubernetes cluster
+
+Starting from the `serverDeploymentSkeleton.yaml` file, generate the custom deployment file depending on your hostname and deploy it in your k8s cluster:
+
+```
+export HOSTNAME=<custom-hostname>
+envsubst '$HOSTNAME' < serverDeploymentSkeleton.yaml > customServerDeployment.yaml
+kubectl apply -f customServerDeployment.yaml
+```
+
+*N.B.: Ingress annotations are ingress controller dependent*

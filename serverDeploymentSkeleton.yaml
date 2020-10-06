@@ -53,7 +53,7 @@ metadata:
   namespace: latency-tester
 spec:
   rules:
-  - host: latency-tester.crownlabs.polito.it
+  - host: ${HOSTNAME}
     http:
       paths:
         - backend:
@@ -62,5 +62,5 @@ spec:
           path: /
   tls:
     - hosts:
-      - latency-tester.crownlabs.polito.it
+      - ${HOSTNAME}
       secretName: latency-tester-tls
