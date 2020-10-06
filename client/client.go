@@ -17,12 +17,13 @@ import (
 const LogPath = "/tmp/"
 
 var reps = flag.Uint64("reps", 0, "number of repetitions")
-var logFile = flag.String("log", "log.csv", "file to store latency numbers")
+var logFile = flag.String("log", "log", "file to store latency numbers")
 var requestBytes = flag.Uint("requestPayload", 64, "bytes of the payload")
 var responseBytes = flag.Uint("responsePayload", 64, "bytes of the response payload")
 var interval = flag.Uint("interval", 1000, "send interval time (ms)")
 var pingIp = flag.String("pingIp", "", "ip to ping")
 var https = flag.Bool("tls", false, "true if tls enabled")
+var traceroute = flag.Bool("traceroute", false, "true if traceroute requested")
 
 func main() {
 	flag.Parse()
@@ -36,7 +37,7 @@ func main() {
 		log.Fatalf("Ip to ping required")
 	}
 
-	printLogs(*reps, *requestBytes, *responseBytes, *interval, *pingIp, *https, address)
+	printLogs(*reps, *requestBytes, *responseBytes, *interval, *pingIp, *https, *traceroute, address)
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
@@ -44,8 +45,8 @@ func main() {
 	var u url.URL
 	var conn *websocket.Conn
 	if *https {
-		conf := &tls.Config{ InsecureSkipVerify: true }
-		dialer := websocket.Dialer{ TLSClientConfig: conf }
+		conf := &tls.Config{InsecureSkipVerify: true}
+		dialer := websocket.Dialer{TLSClientConfig: conf}
 		u = url.URL{Scheme: "wss", Host: address, Path: "/echo"}
 		c, _, err := dialer.Dial(u.String(), nil)
 		if err != nil {
@@ -66,32 +67,36 @@ func main() {
 	donePing := make(chan struct{})
 	ssHandling := make(chan bool)
 
-	toolRtt, toolFileErr := os.Create(LogPath + "tool-rtt_" + *logFile)
+	toolRtt, toolFileErr := os.Create(LogPath + "tool-rtt_" + *logFile + ".csv")
 	if toolFileErr != nil {
 		log.Fatalf("failed creating file: %s", toolFileErr)
 	}
-	toolRtt.WriteString("#e2e-rtt,client-send-ts,server-ts\n")
-	osRtt, osRttFileErr := os.Create(LogPath + "os-rtt_" + *logFile)
+	toolRtt.WriteString("#client-send-timestamp,server-timestamp,e2e-rtt\n")
+	osRtt, osRttFileErr := os.Create(LogPath + "os-rtt_" + *logFile + ".csv")
 	if osRttFileErr != nil {
 		log.Fatalf("failed creating file: %s", osRttFileErr)
 	}
-	osRtt.WriteString("#os-rtt,ts\n")
-	tcpStats, tcpStatsFileErr := os.Create(LogPath + "tcp-stats_" + *logFile)
+	osRtt.WriteString("#timestamp,os-rtt\n")
+	tcpStats, tcpStatsFileErr := os.Create(LogPath + "tcp-stats_" + *logFile + ".csv")
 	if tcpStatsFileErr != nil {
 		log.Fatalf("failed creating file: %s", tcpStatsFileErr)
 	}
-	tcpStats.WriteString("#message-id,state,ca_state,retransmits,probes,backoff,options,pad_cgo_0,rto,ato,snd_mss," +
-		"rcv_mss,unacked,sacked,lost,retrans,fackets,last_data_sent,last_ack_sent,last_data_recv,last_ack_recv,pmtu," +
-		"rcv_ssthresh,rtt,rttvar,snd_ssthresh,snd_cwnd,advmss,reordering,rcv_rtt,rcv_space,total_retrans\n")
-	tracerouteFile, tracerouteFileErr := os.Create(LogPath + "traceroute_" + *logFile)
-	if tracerouteFileErr != nil {
-		log.Fatalf("failed creating file: %s", tracerouteFileErr)
-	}
+	tcpStats.WriteString("#timestamp,message-id,state,ca_state,retransmits,probes,backoff,options,pad_cgo_0-0," +
+		"pad_cgo_0-1,rto,ato,snd_mss,rcv_mss,unacked,sacked,lost,retrans,fackets,last_data_sent,last_ack_sent," +
+		"last_data_recv,last_ack_recv,pmtu,rcv_ssthresh,rtt,rttvar,snd_ssthresh,snd_cwnd,advmss,reordering,rcv_rtt," +
+		"rcv_space,total_retrans\n")
 
-	log.Println("Starting traceroute to", *pingIp + "...")
-	customTraceroute(*pingIp, tracerouteFile)
-	log.Println("Traceroute completed!")
-	log.Println()
+	if *traceroute {
+		tracerouteFile, tracerouteFileErr := os.Create(LogPath + "traceroute_" + *logFile)
+		if tracerouteFileErr != nil {
+			log.Fatalf("failed creating file: %s", tracerouteFileErr)
+		}
+
+		log.Println("Starting traceroute to", *pingIp+"...")
+		customTraceroute(*pingIp, tracerouteFile)
+		log.Println("Traceroute completed!")
+		log.Println()
+	}
 
 	stopRead := false
 	ssReading := false

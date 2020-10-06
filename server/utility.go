@@ -8,13 +8,14 @@ import (
 )
 
 type DataJSON struct {
-	Id      uint64
+	Id              uint64
 	ClientTimestamp time.Time
 	ServerTimestamp time.Time
-	Payload string
+	Payload         string
 }
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
 var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func getTimestamp() time.Time {
@@ -34,7 +35,7 @@ func randomString(length uint) string {
 }
 
 func printLogs(addr net.Addr,
-							 responseBytes int) {
+	responseBytes int) {
 	log.Println("Connection established with", addr)
 	log.Println("Response payload size =", responseBytes)
 }

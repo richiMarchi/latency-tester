@@ -11,13 +11,14 @@ import (
 )
 
 type DataJSON struct {
-	Id      uint64
+	Id              uint64
 	ClientTimestamp time.Time
 	ServerTimestamp time.Time
-	Payload string
+	Payload         string
 }
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
 var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func getTimestamp() time.Time {
@@ -37,18 +38,20 @@ func randomString(length uint) string {
 }
 
 func printLogs(reps uint64,
-							 requestBytes uint,
-							 responseBytes uint,
-							 interval uint,
-							 pingIp string,
-							 tls bool,
-							 address string) {
+	requestBytes uint,
+	responseBytes uint,
+	interval uint,
+	pingIp string,
+	tls bool,
+	traceroute bool,
+	address string) {
 	log.Println("Repetitions:\t\t", reps)
 	log.Println("Request Bytes:\t\t", requestBytes)
 	log.Println("Response Bytes:\t\t", responseBytes)
 	log.Println("Send Interval:\t\t", interval)
 	log.Println("Ping and Traceroute IP:\t", pingIp)
 	log.Println("TLS enabled:\t\t", tls)
+	log.Println("Traceroute enabled:\t", traceroute)
 	log.Println("Address:\t\t", address)
 	log.Println()
 }
