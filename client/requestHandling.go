@@ -18,7 +18,8 @@ func sendNTimes(n uint64,
 	networkPackets *uint64) {
 	var i uint64
 	for i = 0; i < n; i++ {
-		jsonMap := DataJSON{Id: i, Payload: *payload, ClientTimestamp: getTimestamp(), ServerTimestamp: time.Time{}}
+		tmp := getTimestamp()
+		jsonMap := DataJSON{Id: i, Payload: *payload, ClientTimestamp: tmp, ServerTimestamp: time.Time{}}
 		marshal, _ := json.Marshal(jsonMap)
 		atomic.AddUint64(networkPackets, 1)
 		*ssReading = true
@@ -28,6 +29,11 @@ func sendNTimes(n uint64,
 		if err != nil {
 			log.Println("write: ", err)
 			return
+		}
+		tsDiff := (time.Duration(*interval) * time.Millisecond) - time.Duration(getTimestamp().Sub(tmp).Nanoseconds())
+		if tsDiff < 0 {
+			tsDiff = 0
+			log.Println("Warning: It was not possible to send message", i + 1 , "after the desired interval!")
 		}
 		select {
 		case <-*interrupt:
@@ -39,7 +45,7 @@ func sendNTimes(n uint64,
 				return
 			}
 			return
-		case <-time.After(time.Duration(*interval) * time.Millisecond):
+		case <-time.After(tsDiff):
 		}
 	}
 	err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
@@ -56,25 +62,27 @@ func infiniteSendLoop(c *websocket.Conn,
 	ssHandling *chan bool,
 	networkPackets *uint64) {
 
-	ticker := time.NewTicker(time.Duration(*interval) * time.Millisecond)
-	defer ticker.Stop()
-
 	var id uint64 = 0
 	for {
+		tmp := getTimestamp()
+		jsonMap := DataJSON{Id: id, Payload: *payload, ClientTimestamp: tmp, ServerTimestamp: time.Time{}}
+		marshal, _ := json.Marshal(jsonMap)
+		atomic.AddUint64(networkPackets, 1)
+		*ssReading = true
+		*ssHandling <- true
+		err := c.WriteMessage(websocket.TextMessage, marshal)
+		*ssReading = false
+		id = id + 1
+		if err != nil {
+			log.Println("write: ", err)
+			return
+		}
+		tsDiff := (time.Duration(*interval) * time.Millisecond) - time.Duration(getTimestamp().Sub(tmp).Nanoseconds())
+		if tsDiff < 0 {
+			tsDiff = 0
+			log.Println("Warning: It was not possible to send message", id, "after the desired interval!")
+		}
 		select {
-		case <-ticker.C:
-			jsonMap := DataJSON{Id: id, Payload: *payload, ClientTimestamp: getTimestamp(), ServerTimestamp: time.Time{}}
-			marshal, _ := json.Marshal(jsonMap)
-			atomic.AddUint64(networkPackets, 1)
-			*ssReading = true
-			*ssHandling <- true
-			err := c.WriteMessage(websocket.TextMessage, marshal)
-			*ssReading = false
-			id = id + 1
-			if err != nil {
-				log.Println("write: ", err)
-				return
-			}
 		case <-*interrupt:
 			log.Println("interrupt")
 
@@ -84,6 +92,7 @@ func infiniteSendLoop(c *websocket.Conn,
 				return
 			}
 			return
+		case <-time.After(tsDiff):
 		}
 	}
 }
