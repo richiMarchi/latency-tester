@@ -3,18 +3,16 @@ package main
 import (
 	"crypto/tls"
 	"flag"
-	"github.com/gorilla/websocket"
 	_ "golang.org/x/xerrors"
 	"log"
 	"net"
-	"net/url"
 	"os"
 	"os/signal"
-	"strconv"
 	"sync"
 )
 
 const LogPath = "/tmp/"
+const errorRetry = 20
 
 var reps = flag.Uint64("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "log", "file to store latency numbers")
@@ -23,10 +21,11 @@ var responseBytes = flag.Uint64("responsePayload", 64, "bytes of the response pa
 var interval = flag.Uint64("interval", 1000, "send interval time (ms)")
 var https = flag.Bool("tls", false, "true if tls enabled")
 var traceroute = flag.Bool("traceroute", false, "true if traceroute requested")
+var address string
 
 func main() {
 	flag.Parse()
-	address := flag.Arg(0)
+	address = flag.Arg(0)
 	pingIp := flag.Arg(1)
 	log.SetFlags(0)
 	if *requestBytes < 62 || *responseBytes < 62 {
@@ -46,25 +45,7 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	var u url.URL
-	var conn *websocket.Conn
-	if *https {
-		conf := &tls.Config{InsecureSkipVerify: true}
-		dialer := websocket.Dialer{TLSClientConfig: conf}
-		u = url.URL{Scheme: "wss", Host: address, Path: "/echo"}
-		c, _, err := dialer.Dial(u.String(), nil)
-		if err != nil {
-			log.Fatal("dial: ", err)
-		}
-		conn = c
-	} else {
-		u = url.URL{Scheme: "ws", Host: address, Path: "/echo"}
-		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-		if err != nil {
-			log.Fatal("dial: ", err)
-		}
-		conn = c
-	}
+	conn := connect()
 	defer conn.Close()
 
 	doneRead := make(chan struct{})
@@ -114,12 +95,6 @@ func main() {
 	go readDispatcher(conn, &stopRead, &doneRead, toolRtt, &networkPackets)
 
 	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
-
-	resErr := conn.WriteMessage(websocket.TextMessage, []byte(strconv.FormatUint(*responseBytes, 10)))
-	if resErr != nil {
-		log.Println("write: ", resErr)
-		return
-	}
 
 	// Parallel os ping and tcp stats handlers
 	wg.Add(2)

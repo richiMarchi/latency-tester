@@ -17,7 +17,8 @@ func sendNTimes(n uint64,
 	ssHandling *chan bool,
 	networkPackets *uint64) {
 	var i uint64
-	for i = 0; i < n; i++ {
+	errorTry := 0
+	for i = 1; i <= n; i++ {
 		tmp := getTimestamp()
 		jsonMap := DataJSON{Id: i, Payload: *payload, ClientTimestamp: tmp, ServerTimestamp: time.Time{}}
 		marshal, _ := json.Marshal(jsonMap)
@@ -26,14 +27,24 @@ func sendNTimes(n uint64,
 		*ssHandling <- true
 		err := c.WriteMessage(websocket.TextMessage, marshal)
 		*ssReading = false
-		if err != nil {
-			log.Println("write: ", err)
-			return
+		for err != nil {
+			if errorTry == errorRetry {
+				log.Println("Could not reset the connection.")
+				return
+			}
+			log.Printf("Trying to reset connection: %d/%d\n", errorTry, errorRetry)
+			c = connect()
+			jsonMap.Id = 0
+			jsonMap.Payload = "Connection Reset"
+			resetMarshal, _ := json.Marshal(jsonMap)
+			err = c.WriteMessage(websocket.TextMessage, resetMarshal)
+			errorTry += 1
 		}
+		errorTry = 0
 		tsDiff := (time.Duration(*interval) * time.Millisecond) - time.Duration(getTimestamp().Sub(tmp).Nanoseconds())
 		if tsDiff < 0 {
 			tsDiff = 0
-			log.Println("Warning: It was not possible to send message", i + 1 , "after the desired interval!")
+			log.Println("Warning: It was not possible to send message", i+1, "after the desired interval!")
 		}
 		select {
 		case <-*interrupt:
@@ -61,8 +72,8 @@ func infiniteSendLoop(c *websocket.Conn,
 	ssReading *bool,
 	ssHandling *chan bool,
 	networkPackets *uint64) {
-
-	var id uint64 = 0
+	var id uint64 = 1
+	errorTry := 0
 	for {
 		tmp := getTimestamp()
 		jsonMap := DataJSON{Id: id, Payload: *payload, ClientTimestamp: tmp, ServerTimestamp: time.Time{}}
@@ -73,10 +84,21 @@ func infiniteSendLoop(c *websocket.Conn,
 		err := c.WriteMessage(websocket.TextMessage, marshal)
 		*ssReading = false
 		id = id + 1
-		if err != nil {
-			log.Println("write: ", err)
-			return
+		for err != nil {
+			if errorTry == errorRetry {
+				log.Println("Could not reset the connection.")
+				atomic.StoreUint64(networkPackets, 0)
+				return
+			}
+			log.Printf("Trying to reset connection: %d/%d\n", errorTry+1, errorRetry)
+			c = connect()
+			jsonMap.Id = 0
+			jsonMap.Payload = "Connection Reset"
+			resetMarshal, _ := json.Marshal(jsonMap)
+			err = c.WriteMessage(websocket.TextMessage, resetMarshal)
+			errorTry += 1
 		}
+		errorTry = 0
 		tsDiff := (time.Duration(*interval) * time.Millisecond) - time.Duration(getTimestamp().Sub(tmp).Nanoseconds())
 		if tsDiff < 0 {
 			tsDiff = 0
