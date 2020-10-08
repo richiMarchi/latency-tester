@@ -16,7 +16,8 @@ func readDispatcher(c *websocket.Conn,
 	stop *bool,
 	done *chan struct{},
 	toolRtt *os.File,
-	networkPackets *uint64) {
+	networkPackets *uint64,
+	reset *chan bool) {
 	defer close(*done)
 	defer toolRtt.Close()
 
@@ -29,7 +30,7 @@ func readDispatcher(c *websocket.Conn,
 				log.Println("read: ", err)
 				return
 			} else {
-				time.Sleep(1 * time.Second)
+				<-*reset
 				continue
 			}
 		}

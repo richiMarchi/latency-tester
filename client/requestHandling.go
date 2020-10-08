@@ -15,7 +15,8 @@ func sendNTimes(n uint64,
 	payload *string,
 	ssReading *bool,
 	ssHandling *chan bool,
-	networkPackets *uint64) {
+	networkPackets *uint64,
+	reset *chan bool) {
 	var i uint64
 	errorTry := 0
 	for i = 1; i <= n; i++ {
@@ -38,6 +39,7 @@ func sendNTimes(n uint64,
 			jsonMap.Payload = "Connection Reset"
 			resetMarshal, _ := json.Marshal(jsonMap)
 			err = c.WriteMessage(websocket.TextMessage, resetMarshal)
+			*reset <- true
 			errorTry += 1
 		}
 		errorTry = 0
@@ -71,7 +73,8 @@ func infiniteSendLoop(c *websocket.Conn,
 	payload *string,
 	ssReading *bool,
 	ssHandling *chan bool,
-	networkPackets *uint64) {
+	networkPackets *uint64,
+	reset *chan bool) {
 	var id uint64 = 1
 	errorTry := 0
 	for {
@@ -96,6 +99,7 @@ func infiniteSendLoop(c *websocket.Conn,
 			jsonMap.Payload = "Connection Reset"
 			resetMarshal, _ := json.Marshal(jsonMap)
 			err = c.WriteMessage(websocket.TextMessage, resetMarshal)
+			*reset <- true
 			errorTry += 1
 		}
 		errorTry = 0

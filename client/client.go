@@ -51,6 +51,7 @@ func main() {
 	doneRead := make(chan struct{})
 	donePing := make(chan struct{})
 	ssHandling := make(chan bool)
+	reset := make(chan bool)
 
 	toolRtt, toolFileErr := os.Create(LogPath + "tool-rtt_" + *logFile + ".csv")
 	if toolFileErr != nil {
@@ -92,7 +93,7 @@ func main() {
 	var networkPackets uint64 = 0
 
 	// Parallel read dispatcher and ss handler
-	go readDispatcher(conn, &stopRead, &doneRead, toolRtt, &networkPackets)
+	go readDispatcher(conn, &stopRead, &doneRead, toolRtt, &networkPackets, &reset)
 
 	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
 
@@ -108,9 +109,9 @@ func main() {
 
 	// Start making requests
 	if *reps == 0 {
-		infiniteSendLoop(conn, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets)
+		infiniteSendLoop(conn, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets, &reset)
 	} else {
-		sendNTimes(*reps, conn, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets)
+		sendNTimes(*reps, conn, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets, &reset)
 	}
 	// Stop all go routines
 	stopRead = true
