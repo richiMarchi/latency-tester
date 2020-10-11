@@ -2,10 +2,13 @@ package main
 
 import (
 	"crypto/tls"
+	"github.com/gorilla/websocket"
 	"log"
 	"math/rand"
 	"net"
+	"net/url"
 	"reflect"
+	"strconv"
 	"time"
 	"unsafe"
 )
@@ -20,6 +23,29 @@ type DataJSON struct {
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+func connect() *websocket.Conn {
+	var conn *websocket.Conn
+	if *https {
+		conf := &tls.Config{InsecureSkipVerify: true}
+		dialer := websocket.Dialer{TLSClientConfig: conf}
+		u := url.URL{Scheme: "wss", Host: address, Path: "/echo"}
+		c, _, err := dialer.Dial(u.String(), nil)
+		if err != nil {
+			log.Fatal("dial: ", err)
+		}
+		conn = c
+	} else {
+		u := url.URL{Scheme: "ws", Host: address, Path: "/echo"}
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		if err != nil {
+			log.Fatal("dial: ", err)
+		}
+		conn = c
+	}
+	_ = conn.WriteMessage(websocket.TextMessage, []byte(strconv.FormatUint(*responseBytes, 10)))
+	return conn
+}
 
 func getTimestamp() time.Time {
 	return time.Now()
@@ -54,6 +80,14 @@ func printLogs(reps uint64,
 	log.Println("Address:\t\t", address)
 	log.Println("Ping and Traceroute IP:\t", pingIp)
 	log.Println()
+}
+
+func getTCPConnFromWebsocketConn(conn *websocket.Conn) *net.TCPConn {
+	if *https {
+		return getConnFromTLSConn(conn.UnderlyingConn().(*tls.Conn)).(*net.TCPConn)
+	} else {
+		return conn.UnderlyingConn().(*net.TCPConn)
+	}
 }
 
 // to get the internal wrapped connection from the tls.Conn
