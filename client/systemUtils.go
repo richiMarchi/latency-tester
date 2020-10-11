@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/brucespang/go-tcpinfo"
 	"github.com/google/go-cmp/cmp"
-	"net"
+	"github.com/gorilla/websocket"
 	"os"
 	"os/exec"
 	"strconv"
@@ -22,7 +22,7 @@ func customTraceroute(tracerouteIp string,
 
 func customPing(pingIp string,
 	wGroup *sync.WaitGroup,
-	done *chan struct{},
+	done chan struct{},
 	outputFile *os.File) {
 	defer wGroup.Done()
 	defer outputFile.Close()
@@ -34,27 +34,34 @@ func customPing(pingIp string,
 			outputFile.WriteString(strconv.FormatInt(getTimestamp().UnixNano(), 10) + "," + floatMs + "\n")
 		}
 		select {
-		case <-*done:
+		case <-done:
 			return
 		case <-time.After(time.Duration(*interval) * time.Millisecond):
 		}
 	}
 }
 
-func getSocketStats(conn *net.TCPConn,
+func getSocketStats(conn *websocket.Conn,
 	ssReading *bool,
 	outputFile *os.File,
 	wg *sync.WaitGroup,
-	ssHandling *chan bool) {
+	ssHandling chan uint64,
+	reset chan *websocket.Conn) {
 	defer wg.Done()
 	defer outputFile.Close()
+
+	tcpConn := getTCPConnFromWebsocketConn(conn)
 	var sockOpt []*tcpinfo.TCPInfo
 	var timestamps []time.Time
-	msgId := 1
-	for <-*ssHandling {
+	var msgId uint64
+	for {
+		msgId = <-ssHandling
+		if msgId == 0 {
+			break
+		}
 		for *ssReading {
 			timestamps = append(timestamps, getTimestamp())
-			tcpInfo, _ := tcpinfo.GetsockoptTCPInfo(conn)
+			tcpInfo, _ := tcpinfo.GetsockoptTCPInfo(tcpConn)
 			sockOpt = append(sockOpt, tcpInfo)
 		}
 		for i, info := range sockOpt {
@@ -63,10 +70,16 @@ func getSocketStats(conn *net.TCPConn,
 				str = strings.ReplaceAll(str[1:len(str)-1], " ", ",")
 				str = strings.ReplaceAll(str, "[", "")
 				str = strings.ReplaceAll(str, "]", "")
-				outputFile.WriteString(strconv.FormatInt(timestamps[i].UnixNano(), 10) + "," + strconv.Itoa(msgId) + "," + str + "\n")
+				outputFile.WriteString(strconv.FormatInt(timestamps[i].UnixNano(), 10) + "," +
+					strconv.FormatUint(msgId, 10) + "," + str + "\n")
 			}
 		}
 		sockOpt = sockOpt[:0]
-		msgId += 1
+		select {
+		case conn = <-reset:
+			tcpConn = getTCPConnFromWebsocketConn(conn)
+			outputFile.WriteString(strconv.FormatInt(getTimestamp().UnixNano(), 10) + ",-1,Connection reset\n")
+		default:
+		}
 	}
 }

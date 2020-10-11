@@ -82,6 +82,14 @@ func printLogs(reps uint64,
 	log.Println()
 }
 
+func getTCPConnFromWebsocketConn(conn *websocket.Conn) *net.TCPConn {
+	if *https {
+		return getConnFromTLSConn(conn.UnderlyingConn().(*tls.Conn)).(*net.TCPConn)
+	} else {
+		return conn.UnderlyingConn().(*net.TCPConn)
+	}
+}
+
 // to get the internal wrapped connection from the tls.Conn
 func getConnFromTLSConn(tlsConn *tls.Conn) net.Conn {
 	// awful workaround until https://github.com/golang/go/issues/29257 is solved.

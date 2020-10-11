@@ -1,18 +1,16 @@
 package main
 
 import (
-	"crypto/tls"
 	"flag"
+	"github.com/gorilla/websocket"
 	_ "golang.org/x/xerrors"
 	"log"
-	"net"
 	"os"
 	"os/signal"
 	"sync"
 )
 
 const LogPath = "/tmp/"
-const errorRetry = 20
 
 var reps = flag.Uint64("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "log", "file to store latency numbers")
@@ -50,8 +48,8 @@ func main() {
 
 	doneRead := make(chan struct{})
 	donePing := make(chan struct{})
-	ssHandling := make(chan bool)
-	reset := make(chan bool)
+	ssHandling := make(chan uint64)
+	reset := make(chan *websocket.Conn, 2)
 
 	toolRtt, toolFileErr := os.Create(LogPath + "tool-rtt_" + *logFile + ".csv")
 	if toolFileErr != nil {
@@ -84,42 +82,33 @@ func main() {
 		log.Println()
 	}
 
-	stopRead := false
 	ssReading := false
 
 	var wg sync.WaitGroup
 
-	// Variable atomically handled in order to keep track of the packets in the network
-	var networkPackets uint64 = 0
-
 	// Parallel read dispatcher and ss handler
-	go readDispatcher(conn, &stopRead, &doneRead, toolRtt, &networkPackets, &reset)
+	go readDispatcher(conn, doneRead, toolRtt, reset)
 
 	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
 
 	// Parallel os ping and tcp stats handlers
 	wg.Add(2)
-	if *https {
-		go getSocketStats(getConnFromTLSConn(conn.UnderlyingConn().(*tls.Conn)).(*net.TCPConn),
-			&ssReading, tcpStats, &wg, &ssHandling)
-	} else {
-		go getSocketStats(conn.UnderlyingConn().(*net.TCPConn), &ssReading, tcpStats, &wg, &ssHandling)
-	}
-	go customPing(pingIp, &wg, &donePing, osRtt)
+	go getSocketStats(conn, &ssReading, tcpStats, &wg, ssHandling, reset)
+	go customPing(pingIp, &wg, donePing, osRtt)
 
 	// Start making requests
 	if *reps == 0 {
-		infiniteSendLoop(conn, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets, &reset)
+		infiniteSendLoop(conn, interrupt, &payload, &ssReading, ssHandling, reset)
 	} else {
-		sendNTimes(*reps, conn, &interrupt, &payload, &ssReading, &ssHandling, &networkPackets, &reset)
+		sendNTimes(*reps, conn, interrupt, &payload, &ssReading, ssHandling, reset)
 	}
 	// Stop all go routines
-	stopRead = true
 	close(donePing)
-	ssHandling <- false
+	ssHandling <- 0
 
 	// Wait for the go routines to complete their job
 	<-doneRead
+	toolRtt.Close()
 	wg.Wait()
 	log.Println()
 	log.Println("Everything is completed!")

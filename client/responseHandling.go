@@ -8,29 +8,27 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 func readDispatcher(c *websocket.Conn,
-	stop *bool,
-	done *chan struct{},
+	done chan struct{},
 	toolRtt *os.File,
-	networkPackets *uint64,
-	reset *chan bool) {
-	defer close(*done)
-	defer toolRtt.Close()
-
+	reset chan *websocket.Conn) {
 	var wgReader sync.WaitGroup
 	var mux sync.Mutex
-	for !*stop || atomic.LoadUint64(networkPackets) > 0 {
+	for {
 		_, message, err := c.ReadMessage()
 		if err != nil {
 			if strings.Contains(err.Error(), "1000") {
 				log.Println("read: ", err)
+				wgReader.Wait()
+				close(done)
 				return
 			} else {
-				<-*reset
+				log.Println("Reader thread: waiting for connection to reset...")
+				c = <-reset
+				log.Println("Reader thread: connection reset signaled")
 				continue
 			}
 		}
@@ -38,9 +36,7 @@ func readDispatcher(c *websocket.Conn,
 
 		// dispatch read
 		go singleRead(&wgReader, &message, &mux, toolRtt)
-		atomic.AddUint64(networkPackets, ^uint64(0))
 	}
-	wgReader.Wait()
 }
 
 func singleRead(wgReader *sync.WaitGroup,
