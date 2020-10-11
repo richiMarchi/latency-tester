@@ -97,11 +97,8 @@ func main() {
 	go customPing(pingIp, &wg, donePing, osRtt)
 
 	// Start making requests
-	if *reps == 0 {
-		infiniteSendLoop(conn, interrupt, &payload, &ssReading, ssHandling, reset)
-	} else {
-		sendNTimes(*reps, conn, interrupt, &payload, &ssReading, ssHandling, reset)
-	}
+	requestSender(*reps, conn, interrupt, &payload, &ssReading, ssHandling, reset)
+
 	// Stop all go routines
 	close(donePing)
 	ssHandling <- 0
