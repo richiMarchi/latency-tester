@@ -8,20 +8,26 @@ import (
 	"time"
 )
 
-func requestSender(n uint64,
+func requestSender(
 	c *websocket.Conn,
 	interrupt chan os.Signal,
-	payload *string,
 	ssReading *bool,
 	ssHandling chan uint64,
 	reset chan *websocket.Conn) {
+	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
 	var id uint64
-	if n != 0 {
-		n += 1
+	// If *reps == 0 then loop infinitely, otherwise loop *reps times
+	if *reps != 0 {
+		*reps += 1
 	}
-	for id = 1; id != n; id++ {
+	for id = 1; id != *reps; id++ {
 		tmp := getTimestamp()
-		jsonMap := DataJSON{Id: id, Payload: *payload, ClientTimestamp: tmp, ServerTimestamp: time.Time{}}
+		jsonMap := DataJSON{
+			Id:              id,
+			Payload:         payload,
+			ClientTimestamp: tmp,
+			ServerTimestamp: time.Time{},
+		}
 		marshal, _ := json.Marshal(jsonMap)
 		*ssReading = true
 		ssHandling <- id

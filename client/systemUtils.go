@@ -13,19 +13,19 @@ import (
 	"time"
 )
 
-func customTraceroute(tracerouteIp string,
+func customTraceroute(
+	tracerouteIp string,
 	outputFile *os.File) {
-	defer outputFile.Close()
 	output, _ := exec.Command("traceroute", tracerouteIp).Output()
 	outputFile.WriteString(string(output))
 }
 
-func customPing(pingIp string,
+func customPing(
+	pingIp string,
 	wGroup *sync.WaitGroup,
 	done chan struct{},
 	outputFile *os.File) {
 	defer wGroup.Done()
-	defer outputFile.Close()
 	for {
 		output, _ := exec.Command("ping", pingIp, "-c 1").Output()
 		rttMs := string(output)
@@ -41,18 +41,17 @@ func customPing(pingIp string,
 	}
 }
 
-func getSocketStats(conn *websocket.Conn,
+func getSocketStats(
+	conn *websocket.Conn,
 	ssReading *bool,
 	outputFile *os.File,
 	wg *sync.WaitGroup,
 	ssHandling chan uint64,
 	reset chan *websocket.Conn) {
 	defer wg.Done()
-	defer outputFile.Close()
 
 	tcpConn := getTCPConnFromWebsocketConn(conn)
-	var sockOpt []*tcpinfo.TCPInfo
-	var timestamps []time.Time
+	var sockOpt []TimedTCPInfo
 	var msgId uint64
 	for {
 		msgId = <-ssHandling
@@ -60,17 +59,19 @@ func getSocketStats(conn *websocket.Conn,
 			break
 		}
 		for *ssReading {
-			timestamps = append(timestamps, getTimestamp())
 			tcpInfo, _ := tcpinfo.GetsockoptTCPInfo(tcpConn)
-			sockOpt = append(sockOpt, tcpInfo)
+			sockOpt = append(sockOpt, TimedTCPInfo{
+				Timestamp: getTimestamp(),
+				TcpInfo:   tcpInfo,
+			})
 		}
 		for i, info := range sockOpt {
-			if i == 0 || !cmp.Equal(sockOpt[i], sockOpt[i-1]) {
-				str := fmt.Sprintf("%v", *info)
+			if i == 0 || !cmp.Equal(sockOpt[i].TcpInfo, sockOpt[i-1].TcpInfo) {
+				str := fmt.Sprintf("%v", *info.TcpInfo)
 				str = strings.ReplaceAll(str[1:len(str)-1], " ", ",")
 				str = strings.ReplaceAll(str, "[", "")
 				str = strings.ReplaceAll(str, "]", "")
-				outputFile.WriteString(strconv.FormatInt(timestamps[i].UnixNano(), 10) + "," +
+				outputFile.WriteString(strconv.FormatInt(info.Timestamp.UnixNano(), 10) + "," +
 					strconv.FormatUint(msgId, 10) + "," + str + "\n")
 			}
 		}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"github.com/brucespang/go-tcpinfo"
 	"github.com/gorilla/websocket"
 	"log"
 	"math/rand"
@@ -18,6 +19,11 @@ type DataJSON struct {
 	ClientTimestamp time.Time
 	ServerTimestamp time.Time
 	Payload         string
+}
+
+type TimedTCPInfo struct {
+	Timestamp time.Time
+	TcpInfo   *tcpinfo.TCPInfo
 }
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -63,20 +69,13 @@ func randomString(length uint64) string {
 	return stringWithCharset(length, charset)
 }
 
-func printLogs(reps uint64,
-	requestBytes uint64,
-	responseBytes uint64,
-	interval uint64,
-	tls bool,
-	traceroute bool,
-	address string,
-	pingIp string) {
-	log.Println("Repetitions:\t\t", reps)
-	log.Println("Request Bytes:\t\t", requestBytes)
-	log.Println("Response Bytes:\t\t", responseBytes)
-	log.Println("Send Interval:\t\t", interval)
-	log.Println("TLS enabled:\t\t", tls)
-	log.Println("Traceroute enabled:\t", traceroute)
+func printLogs() {
+	log.Println("Repetitions:\t\t", *reps)
+	log.Println("Request Bytes:\t\t", *requestBytes)
+	log.Println("Response Bytes:\t\t", *responseBytes)
+	log.Println("Send Interval:\t\t", *interval)
+	log.Println("TLS enabled:\t\t", *https)
+	log.Println("Traceroute enabled:\t", *traceroute)
 	log.Println("Address:\t\t", address)
 	log.Println("Ping and Traceroute IP:\t", pingIp)
 	log.Println()

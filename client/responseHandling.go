@@ -11,7 +11,8 @@ import (
 	"time"
 )
 
-func readDispatcher(c *websocket.Conn,
+func readDispatcher(
+	c *websocket.Conn,
 	done chan struct{},
 	toolRtt *os.File,
 	reset chan *websocket.Conn) {
@@ -39,7 +40,8 @@ func readDispatcher(c *websocket.Conn,
 	}
 }
 
-func singleRead(wgReader *sync.WaitGroup,
+func singleRead(
+	wgReader *sync.WaitGroup,
 	message *[]byte,
 	mux *sync.Mutex,
 	toolRtt *os.File) {
