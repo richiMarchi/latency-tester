@@ -88,26 +88,26 @@ func main() {
 	// Create synchronization channels
 	doneRead := make(chan struct{})
 	donePing := make(chan struct{})
-	ssHandling := make(chan uint64)
 	reset := make(chan *websocket.Conn, 2)
 
 	// Parallel read dispatcher
 	go readDispatcher(conn, doneRead, toolRtt, reset)
 
 	var wg sync.WaitGroup
-	ssReading := false
+	ssReading := true
+	var msgId uint64
 
 	// Parallel os ping and tcp stats handlers
 	wg.Add(2)
-	go getSocketStats(conn, &ssReading, tcpStats, &wg, ssHandling, reset)
+	go getSocketStats(conn, &ssReading, tcpStats, &wg, &msgId)
 	go customPing(pingIp, &wg, donePing, osRtt)
 
 	// Start making requests
-	requestSender(conn, interrupt, &ssReading, ssHandling, reset)
+	requestSender(conn, interrupt, &ssReading, reset, &msgId)
 
 	// Stop all go routines
+	ssReading = false
 	close(donePing)
-	ssHandling <- 0
 
 	// Wait for the go routines to complete their job
 	<-doneRead

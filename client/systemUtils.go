@@ -46,41 +46,27 @@ func getSocketStats(
 	ssReading *bool,
 	outputFile *os.File,
 	wg *sync.WaitGroup,
-	ssHandling chan uint64,
-	reset chan *websocket.Conn) {
+	msgId *uint64) {
 	defer wg.Done()
 
 	tcpConn := getTCPConnFromWebsocketConn(conn)
 	var sockOpt []TimedTCPInfo
-	var msgId uint64
-	for {
-		msgId = <-ssHandling
-		if msgId == 0 {
-			break
-		}
-		for *ssReading {
-			tcpInfo, _ := tcpinfo.GetsockoptTCPInfo(tcpConn)
-			sockOpt = append(sockOpt, TimedTCPInfo{
-				Timestamp: getTimestamp(),
-				TcpInfo:   tcpInfo,
-			})
-		}
-		for i, info := range sockOpt {
-			if i == 0 || !cmp.Equal(sockOpt[i].TcpInfo, sockOpt[i-1].TcpInfo) {
-				str := fmt.Sprintf("%v", *info.TcpInfo)
-				str = strings.ReplaceAll(str[1:len(str)-1], " ", ",")
-				str = strings.ReplaceAll(str, "[", "")
-				str = strings.ReplaceAll(str, "]", "")
-				outputFile.WriteString(strconv.FormatInt(info.Timestamp.UnixNano(), 10) + "," +
-					strconv.FormatUint(msgId, 10) + "," + str + "\n")
-			}
-		}
-		sockOpt = sockOpt[:0]
-		select {
-		case conn = <-reset:
-			tcpConn = getTCPConnFromWebsocketConn(conn)
-			outputFile.WriteString(strconv.FormatInt(getTimestamp().UnixNano(), 10) + ",-1,Connection reset\n")
-		default:
+	for *ssReading {
+		tcpInfo, _ := tcpinfo.GetsockoptTCPInfo(tcpConn)
+		sockOpt = append(sockOpt, TimedTCPInfo{
+			MsgId:     *msgId,
+			Timestamp: getTimestamp(),
+			TcpInfo:   tcpInfo,
+		})
+	}
+	for i, info := range sockOpt {
+		if i == 0 || !cmp.Equal(sockOpt[i].MsgId, sockOpt[i-1].MsgId) || !cmp.Equal(sockOpt[i].TcpInfo, sockOpt[i-1].TcpInfo) {
+			str := fmt.Sprintf("%v", *info.TcpInfo)
+			str = strings.ReplaceAll(str[1:len(str)-1], " ", ",")
+			str = strings.ReplaceAll(str, "[", "")
+			str = strings.ReplaceAll(str, "]", "")
+			outputFile.WriteString(strconv.FormatInt(info.Timestamp.UnixNano(), 10) + "," +
+				strconv.FormatUint(info.MsgId, 10) + "," + str + "\n")
 		}
 	}
 }

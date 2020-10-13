@@ -22,6 +22,7 @@ type DataJSON struct {
 }
 
 type TimedTCPInfo struct {
+	MsgId     uint64
 	Timestamp time.Time
 	TcpInfo   *tcpinfo.TCPInfo
 }
