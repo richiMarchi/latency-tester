@@ -33,7 +33,9 @@ func requestSender(
 			log.Printf("Trying to reset connection...")
 			c = connect()
 			reset <- c
-			reset <- c
+			if *sockOpt {
+				reset <- c
+			}
 			jsonMap.Id = 0
 			jsonMap.Payload = "Connection Reset"
 			resetMarshal, _ := json.Marshal(jsonMap)
@@ -47,6 +49,7 @@ func requestSender(
 		select {
 		case <-interrupt:
 			log.Println("interrupt")
+			*ssReading = false
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
 				log.Println("write close: ", err)
