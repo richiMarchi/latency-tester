@@ -95,12 +95,12 @@ func main() {
 
 	var wg sync.WaitGroup
 	ssReading := true
-	var msgId uint64
+	var msgId uint64 = 0
 
 	// Parallel os ping and tcp stats handlers
 	wg.Add(2)
-	go getSocketStats(conn, &ssReading, tcpStats, &wg, &msgId)
 	go customPing(pingIp, &wg, donePing, osRtt)
+	go getSocketStats(conn, &ssReading, tcpStats, &wg, &msgId)
 
 	// Start making requests
 	requestSender(conn, interrupt, &ssReading, reset, &msgId)

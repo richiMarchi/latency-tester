@@ -19,7 +19,6 @@ func requestSender(
 	if *reps != 0 {
 		*reps += 1
 	}
-	*ssReading = true
 	for *msgId = 1; *msgId != *reps; *msgId++ {
 		tmp := getTimestamp()
 		jsonMap := DataJSON{
@@ -48,7 +47,6 @@ func requestSender(
 		select {
 		case <-interrupt:
 			log.Println("interrupt")
-
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
 				log.Println("write close: ", err)

@@ -52,15 +52,18 @@ func getSocketStats(
 	tcpConn := getTCPConnFromWebsocketConn(conn)
 	var sockOpt []TimedTCPInfo
 	for *ssReading {
-		tcpInfo, _ := tcpinfo.GetsockoptTCPInfo(tcpConn)
-		sockOpt = append(sockOpt, TimedTCPInfo{
-			MsgId:     *msgId,
-			Timestamp: getTimestamp(),
-			TcpInfo:   tcpInfo,
-		})
+		if *msgId != 0 {
+			tcpInfo, _ := tcpinfo.GetsockoptTCPInfo(tcpConn)
+			sockOpt = append(sockOpt, TimedTCPInfo{
+				MsgId:     *msgId,
+				Timestamp: getTimestamp(),
+				TcpInfo:   tcpInfo,
+			})
+		}
 	}
 	for i, info := range sockOpt {
-		if i == 0 || !cmp.Equal(sockOpt[i].MsgId, sockOpt[i-1].MsgId) || !cmp.Equal(sockOpt[i].TcpInfo, sockOpt[i-1].TcpInfo) {
+		if i == 0 || !cmp.Equal(sockOpt[i].MsgId, sockOpt[i-1].MsgId) ||
+			!cmp.Equal(sockOpt[i].TcpInfo, sockOpt[i-1].TcpInfo) {
 			str := fmt.Sprintf("%v", *info.TcpInfo)
 			str = strings.ReplaceAll(str[1:len(str)-1], " ", ",")
 			str = strings.ReplaceAll(str, "[", "")
