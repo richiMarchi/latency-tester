@@ -31,7 +31,7 @@ docker run -p 8080:8080 [--name <container-name>] richimarchi/latency-tester_ser
 
 ```
 docker pull richimarchi/latency-tester_client
-docker run -p 8080:8080 [--name <container-name>] -v <local-log-folder>:/tmp richimarchi/latency-tester_client:latest [-reps=<repetitions>] [-requestPayload=<bytes>] [-responsePayload=<bytes>] [-interval=<ms>] [-tls=<enabled>] [-traceroute=<enabled>] [-log=<log-file>] <address> <ping-ip>
+docker run -p 8080:8080 [--name <container-name>] -v <local-log-folder>:/tmp richimarchi/latency-tester_client:latest [-reps=<repetitions>] [-requestPayload=<bytes>] [-responsePayload=<bytes>] [-interval=<ms>] [-tcpStats=<enabled>] [-tls=<enabled>] [-traceroute=<enabled>] [-log=<log-file>] <address> <ping-ip>
 ```
 
 #### Required input parameters
@@ -49,6 +49,7 @@ docker run -p 8080:8080 [--name <container-name>] -v <local-log-folder>:/tmp ric
 |`-requestPayload`|Request payload size (in bytes), minimum value: `62`|`64`|
 |`-responsePayload`|Response payload size (in bytes), minimum value: `62`|`64`|
 |`-interval`|Requests send interval (in milliseconds)|`1000`|
+|`-tcpStats`|`true` if TCP Stats requested (short execution time is suggested, as it consumes a lot of CPU and RAM)|`false`|
 |`-tls`|`true` if TLS requested|`false`|
 |`-traceroute`|`true` if traceroute is requested to run|`false`|
 |`-log`|Define the name of the file|`log`|

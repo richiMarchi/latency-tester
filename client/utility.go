@@ -22,6 +22,7 @@ type DataJSON struct {
 }
 
 type TimedTCPInfo struct {
+	MsgId     uint64
 	Timestamp time.Time
 	TcpInfo   *tcpinfo.TCPInfo
 }
@@ -76,6 +77,7 @@ func printLogs() {
 	log.Println("Send Interval:\t\t", *interval)
 	log.Println("TLS enabled:\t\t", *https)
 	log.Println("Traceroute enabled:\t", *traceroute)
+	log.Println("TCP Stats enabled:\t", *sockOpt)
 	log.Println("Address:\t\t", address)
 	log.Println("Ping and Traceroute IP:\t", pingIp)
 	log.Println()

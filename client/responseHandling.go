@@ -64,7 +64,8 @@ func singleRead(
 		toolRtt.WriteString(",")
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.UnixNano(), 10))
 		toolRtt.WriteString(",")
-		toolRtt.WriteString(strconv.FormatInt(latency.Milliseconds(), 10) + "." + strconv.Itoa(int(latency%time.Millisecond)))
+		toolRtt.WriteString(strconv.FormatInt(latency.Milliseconds(), 10) + "." +
+			strconv.Itoa(int(latency%time.Millisecond)))
 		toolRtt.WriteString("\n")
 	}
 }
