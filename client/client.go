@@ -36,9 +36,9 @@ func main() {
 		log.Fatal("Server address required")
 	}
 
-	if pingIp == "" {
+	/*if pingIp == "" {
 		log.Fatal("Address to ping required")
-	}
+	}*/
 
 	printLogs()
 
@@ -51,18 +51,18 @@ func main() {
 	defer conn.Close()
 
 	// File creation
-	toolRtt, toolFileErr := os.Create(LogPath + "tool-rtt_" + *logFile + ".csv")
+	toolRtt, toolFileErr := os.Create(LogPath + "" + *logFile + ".csv")
 	if toolFileErr != nil {
 		log.Fatalf("failed creating file: %s", toolFileErr)
 	}
 	toolRtt.WriteString("#client-send-timestamp,server-timestamp,e2e-rtt\n")
 	defer toolRtt.Close()
-	osRtt, osRttFileErr := os.Create(LogPath + "os-rtt_" + *logFile + ".csv")
+	/*osRtt, osRttFileErr := os.Create(LogPath + "os-rtt_" + *logFile + ".csv")
 	if osRttFileErr != nil {
 		log.Fatalf("failed creating file: %s", osRttFileErr)
 	}
 	osRtt.WriteString("#timestamp,os-rtt\n")
-	defer osRtt.Close()
+	defer osRtt.Close()*/
 
 	if *traceroute {
 		tracerouteFile, tracerouteFileErr := os.Create(LogPath + "traceroute_" + *logFile)
@@ -79,7 +79,7 @@ func main() {
 
 	// Create synchronization channels
 	doneRead := make(chan struct{})
-	donePing := make(chan struct{})
+	/*donePing := make(chan struct{})*/
 	reset := make(chan *websocket.Conn, 2)
 
 	// Parallel read dispatcher
@@ -90,8 +90,8 @@ func main() {
 	var msgId uint64 = 0
 
 	// Parallel os ping and, if explicitly requested, tcp stats handlers
-	wg.Add(1)
-	go customPing(pingIp, &wg, donePing, osRtt)
+	/*wg.Add(1)
+	go customPing(pingIp, &wg, donePing, osRtt)*/
 	if *sockOpt {
 		tcpStats, tcpStatsFileErr := os.Create(LogPath + "tcp-stats_" + *logFile + ".csv")
 		if tcpStatsFileErr != nil {
@@ -110,7 +110,7 @@ func main() {
 
 	// Stop all go routines
 	ssReading = false
-	close(donePing)
+	/*close(donePing)*/
 
 	// Wait for the go routines to complete their job
 	<-doneRead

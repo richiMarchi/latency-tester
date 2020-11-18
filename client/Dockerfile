@@ -1,6 +1,6 @@
 FROM golang
 
-RUN apt-get update && apt-get install -y traceroute
+RUN apt-get update && apt-get install -y traceroute tcpdump iperf3
 
 # Copy everything from the current directory to the PWD(Present Working Directory) inside the container
 COPY . .
@@ -8,8 +8,5 @@ COPY . .
 # Download all the dependencies
 RUN go get -d -v ./...
 
-# Build the Go app
-RUN go build -o client .
-
 # Run the executable
-ENTRYPOINT ["./client"]
+ENTRYPOINT ["./executable.sh"]
