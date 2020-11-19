@@ -20,7 +20,7 @@ ping 130.192.31.254 -i 30 -D > /tmp/ping_report.txt &
 PING_PID=$!
 
 # Start tcpdump in background. Remember to stop it before returning!
-tcpdump -U -s 96 -w /tmp/tcpdump_report.pcap 'net 130.192.31.241/32 and tcp port 443' &
+tcpdump -U -s 96 -w /tmp/tcpdump_report.pcap &
 TCPDUMP_PID=$!
 
 # E2E latency testing
