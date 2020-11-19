@@ -2,9 +2,13 @@ package main
 
 import (
 	"encoding/csv"
+	"fmt"
+	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
+	"gonum.org/v1/plot/vg/draw"
+	"gonum.org/v1/plot/vg/vgimg"
 	"io/ioutil"
 	"log"
 	"os"
@@ -18,26 +22,67 @@ var endpoints = []string{
 	"130.192.31.242:8080",
 	"latency-tester.crownlabs.polito.it"}
 var intervals = []int{10, 25, 50, 100, 250, 500}
-var sizes = []int{1024, 10240, 102400, 1024000}
 
 func main() {
-	/*rows := len(endpoints)
+	rows := len(endpoints)
 	cols := len(intervals)
+	var min float64 = 10000
+	var max float64 = 0
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
 		for j := 0; j < cols; j++ {
-			// Boh
+			var tmpMin float64
+			var tmpMax float64
+			plots[i][j], tmpMin, tmpMax = singleBoxPlot(endpoints[i], intervals[j])
+			min = floats.Min([]float64{min, tmpMin})
+			max = floats.Max([]float64{max, tmpMax})
 		}
-	}*/
-	p := singleBoxPlot("latency-tester.crownlabs.polito.it", 500)
+	}
 
-	if err := p.Save(10*vg.Inch, 10*vg.Inch, "boxplot.png"); err != nil {
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			plots[i][j].Y.Min = min - 1
+			plots[i][j].Y.Max = max + 5
+		}
+	}
+
+	img := vgimg.New(vg.Points(3000), vg.Points(1000))
+	dc := draw.New(img)
+
+	t := draw.Tiles{
+		Rows:      rows,
+		Cols:      cols,
+		PadX:      vg.Millimeter,
+		PadY:      vg.Millimeter,
+		PadTop:    vg.Points(2),
+		PadBottom: vg.Points(2),
+		PadLeft:   vg.Points(2),
+		PadRight:  vg.Points(2),
+	}
+
+	canvases := plot.Align(plots, t, dc)
+	for j := 0; j < rows; j++ {
+		for i := 0; i < cols; i++ {
+			if plots[j][i] != nil {
+				plots[j][i].Draw(canvases[j][i])
+			}
+		}
+	}
+
+	w, err := os.Create("boxplot.png")
+	if err != nil {
+		panic(err)
+	}
+	defer w.Close()
+	png := vgimg.PngCanvas{Canvas: img}
+	if _, err := png.WriteTo(w); err != nil {
 		panic(err)
 	}
 }
 
-func singleBoxPlot(ep string, si int) *plot.Plot {
+func singleBoxPlot(ep string, si int) (*plot.Plot, float64, float64) {
+	fmt.Println("Plot for " + ep + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -90,8 +135,10 @@ func singleBoxPlot(ep string, si int) *plot.Plot {
 	p.X.Label.Text = "Request Size (KiB)"
 	p.Y.Label.Text = "E2E RTT (ms)"
 	p.NominalX("1", "10", "100", "1000")
+	p.Title.Text = ep + " - " + strconv.Itoa(si) + "ms"
+	//p.Y.Min = 0
 
-	w := vg.Points(150)
+	w := vg.Points(100)
 	b0, err := plotter.NewBoxPlot(w, 0, oneK)
 	if err != nil {
 		panic(err)
@@ -104,11 +151,15 @@ func singleBoxPlot(ep string, si int) *plot.Plot {
 	if err != nil {
 		panic(err)
 	}
-	b3, err := plotter.NewBoxPlot(w, 3, thousandK)
+	/*b3, err := plotter.NewBoxPlot(w, 3, thousandK)
 	if err != nil {
 		panic(err)
-	}
-	p.Add(b0, b1, b2, b3)
+	}*/
 
-	return p
+	p.Add(b0, b1, b2 /*, b3*/)
+	//p.Y.Min = floats.Min([]float64{b0.AdjLow, b1.AdjLow, b2.AdjLow /*, b3.AdjLow*/}) - 1
+	//p.Y.Max = floats.Max([]float64{b0.AdjHigh, b1.AdjHigh, b2.AdjHigh /*, b3.AdjHigh*/}) + 10
+
+	return p, floats.Min([]float64{b0.AdjLow, b1.AdjLow, b2.AdjLow /*, b3.AdjLow*/}),
+		floats.Max([]float64{b0.AdjHigh, b1.AdjHigh, b2.AdjHigh /*, b3.AdjHigh*/})
 }
