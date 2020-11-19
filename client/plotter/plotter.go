@@ -70,7 +70,7 @@ func main() {
 		}
 	}
 
-	w, err := os.Create("boxplot.png")
+	w, err := os.Create("/tmp/boxplot.png")
 	if err != nil {
 		panic(err)
 	}
@@ -89,14 +89,14 @@ func singleBoxPlot(ep string, si int) (*plot.Plot, float64, float64) {
 	}
 
 	// Open the desired files
-	files, err := ioutil.ReadDir("./")
+	files, err := ioutil.ReadDir("/tmp")
 	if err != nil {
 		log.Fatal(err)
 	}
 	var openFiles []*os.File
 	for _, f := range files {
 		if strings.Contains(f.Name(), "-"+ep+".i") && strings.Contains(f.Name(), ".i"+strconv.Itoa(si)+".x") {
-			file, err := os.Open(f.Name())
+			file, err := os.Open("/tmp/" + f.Name())
 			if err != nil {
 				log.Fatal(err)
 			}

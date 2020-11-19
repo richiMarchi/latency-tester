@@ -2,11 +2,28 @@ FROM golang
 
 RUN apt-get update && apt-get install -y traceroute tcpdump iperf3
 
-# Copy everything from the current directory to the PWD(Present Working Directory) inside the container
+WORKDIR /build
+
+# Copy and download dependency using go mod
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+COPY plotter/go.mod .
+COPY plotter/go.sum .
+RUN go mod download
+
+# Copy the code into the container
 COPY . .
 
-# Download all the dependencies
-RUN go get -d -v ./...
+# Build the application
+RUN go build -o client . && cd plotter && go build -o plotter .
+
+
+# Move to /dist directory as the place for resulting binary folder
+WORKDIR /dist
+
+# Copy binary from build to main folder
+RUN cp /build/client . && cp /build/executable.sh . && cp /build/plotter/plotter .
 
 # Run the executable
 ENTRYPOINT ["./executable.sh"]

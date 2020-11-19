@@ -34,7 +34,7 @@ for ((n=1;n<=$1;n++)); do
     for interval in "${intervals[@]}"; do
       for request in "${sizes[@]}"; do
         repetitions=$((30000/$interval))
-        go run *.go -reps=$repetitions -interval=$interval -requestPayload=$request -responsePayload=1024 -tls=true -log="$n-$address.i$interval.x$request" $address
+        ./client -reps=$repetitions -interval=$interval -requestPayload=$request -responsePayload=1024 -tls=true -log="$n-$address.i$interval.x$request" $address
       done
     done
   done
@@ -48,3 +48,7 @@ done
 # Stop background ping and tcpdump
 kill -INT $PING_PID
 kill -INT $TCPDUMP_PID
+
+echo 'Generating boxplot...'
+./plotter
+echo 'Boxplot complete!'

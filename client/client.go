@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/gorilla/websocket"
-	_ "golang.org/x/xerrors"
 	"log"
 	"os"
 	"os/signal"
