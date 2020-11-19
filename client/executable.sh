@@ -41,7 +41,9 @@ for ((n=1;n<=$1;n++)); do
   if [ "$n" -ne "$1" ]; then
     end_time="$(date -u +%s)"
     elapsed="$(($end_time-$start_time))"
-    sleep $((3600 - $elapsed))
+    if [ "$((3600 - $elapsed))" -gt 0 ]; then
+      sleep $((3600 - $elapsed))
+    fi
   fi
 done
 
