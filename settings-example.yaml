@@ -1,0 +1,24 @@
+runs: 24
+runs_interval: 60
+runs_step_duration: 30
+iperf_ip: "130.192.31.240"
+iperf_port: "80"
+ping_ip: "130.192.31.254"
+ping_interval: 30
+endpoints:
+- "130.192.31.242:8080"
+- "latency-tester.crownlabs.polito.it"
+intervals:
+- 10
+- 25
+- 50
+- 100
+- 250
+- 500
+msg_sizes:
+- 1024
+- 10240
+- 102400
+- 1024000
+response_size: 1024
+tls_enabled: "true"

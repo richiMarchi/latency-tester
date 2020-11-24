@@ -1,4 +1,4 @@
-package customPlotter
+package main
 
 import (
 	"encoding/csv"

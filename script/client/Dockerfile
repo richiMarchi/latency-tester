@@ -8,9 +8,6 @@ WORKDIR /build
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
-COPY plotter/go.mod .
-COPY plotter/go.sum .
-RUN go mod download
 
 # Copy the code into the container
 COPY . .

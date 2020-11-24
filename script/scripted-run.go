@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/go-ping/ping"
 	"github.com/lorenzosaino/go-sysctl"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -11,7 +12,37 @@ import (
 	"time"
 )
 
+type Settings struct {
+	Runs             int      `yaml:"runs"`
+	RunsInterval     int      `yaml:"runs_interval"`      // in minutes
+	RunsStepDuration int      `yaml:"runs_step_duration"` // in seconds
+	IperfIp          string   `yaml:"iperf_ip"`
+	IperfPort        string   `yaml:"iperf_port"`
+	PingIp           string   `yaml:"ping_ip"`
+	PingInterval     int      `yaml:"ping_interval"` // in seconds
+	Endpoints        []string `yaml:"endpoints"`
+	Intervals        []int    `yaml:"intervals"`     // in milliseconds
+	MsgSizes         []int    `yaml:"msg_sizes"`     // in bytes
+	ResponseSize     int      `yaml:"response_size"` // in bytes
+	TlsEnabled       string   `yaml:"tls_enabled"`
+}
+
 func main() {
+
+	if len(os.Args) == 1 {
+		log.Fatal("Settings filename requested")
+	}
+
+	// Settings parsing
+	file, err := ioutil.ReadFile("/tmp/" + os.Args[1])
+	errMgmt(err)
+	var settings Settings
+	err = yaml.Unmarshal(file, &settings)
+	errMgmt(err)
+	if settings.IperfPort == "" {
+		settings.IperfPort = "5201"
+	}
+
 	// Print flags statuses in order to be sure it is as expected
 	val, err := sysctl.Get("net.ipv4.tcp_slow_start_after_idle")
 	errMgmt(err)
@@ -23,63 +54,88 @@ func main() {
 	// Start ping and tcpdump in background
 	c := make(chan os.Signal, 2)
 	var wg sync.WaitGroup
-	//TODO: add parsed address to ping
 	wg.Add(2)
-	go pinger(&wg, "127.0.0.1", c)
+	go pingThread(&wg, settings.PingIp, settings.PingInterval, c)
 	go tcpDumper(&wg, c)
 
-	//TODO: loops
+	for i := 1; i <= settings.Runs; i++ {
+		iperfer(i, settings.IperfIp, settings.IperfPort)
+		startTime := getTimestamp()
+		for _, addr := range settings.Endpoints {
+			for _, inter := range settings.Intervals {
+				for _, size := range settings.MsgSizes {
+					repetitions := int((time.Duration(settings.RunsStepDuration) * time.Second).Milliseconds()) / inter
+					err = exec.Command("./client", "-reps="+strconv.Itoa(repetitions), "-interval="+strconv.Itoa(inter),
+						"-requestPayload="+strconv.Itoa(size), "-responsePayload="+strconv.Itoa(settings.ResponseSize),
+						"-tls="+settings.TlsEnabled, "-log="+strconv.Itoa(i)+"-"+addr+".i"+strconv.Itoa(inter)+".x"+
+							strconv.Itoa(size), addr).Run()
+					errMgmt(err)
+				}
+			}
+		}
+		if i != settings.Runs {
+			elapsed := getTimestamp().Sub(startTime)
+			waitTime := time.Duration(settings.RunsInterval)*time.Minute - elapsed
+			if waitTime < 0 {
+				log.Println("Warning: Run lasted more than 'run_interval'!")
+			} else {
+				time.Sleep(waitTime)
+			}
+		}
+	}
 
 	c <- os.Interrupt
 	c <- os.Interrupt
 	wg.Wait()
+
+	// Plotting
+	Plot(settings.Endpoints, settings.Intervals)
+	errMgmt(err)
 }
 
-func pinger(wg *sync.WaitGroup, address string, c chan os.Signal) {
-	// Create output file
-	osRtt, err := os.Create("/tmp/ping_report.csv")
+func iperfer(run int, ip string, port string) {
+	iperfFile, err := os.Create("/tmp/" + strconv.Itoa(run) + "-iperf_report.txt")
 	errMgmt(err)
-	osRtt.WriteString("#timestamp,os-rtt\n")
-	defer osRtt.Close()
+	defer iperfFile.Close()
 
-	// Create pinger and set interval
-	pinger, err := ping.NewPinger(address)
+	iperfRes, err := exec.Command("iperf3", "-c", ip, "-p", port, "-t", "5", "--connect-timeout", "5000").Output()
 	errMgmt(err)
-	pinger.Interval = 30 * time.Second
+	_, err = iperfFile.Write(iperfRes)
+	errMgmt(err)
+}
+
+func pingThread(wg *sync.WaitGroup, address string, interval int, c chan os.Signal) {
+	osRtt, err := os.Create("/tmp/ping_report.txt")
+	errMgmt(err)
+	defer osRtt.Close()
+	pingerCmd := exec.Command("ping", address, "-i", strconv.Itoa(interval), "-D")
 
 	// Handle stop
 	go func() {
-		for _ = range c {
-			pinger.Stop()
+		for range c {
+			_ = pingerCmd.Process.Signal(os.Interrupt)
 		}
 	}()
 
-	// Handle packet reception
-	pinger.OnRecv = func(pkt *ping.Packet) {
-		osRtt.WriteString(strconv.FormatInt(getTimestamp().UnixNano(), 10) +
-			"," + strconv.FormatInt(pkt.Rtt.Nanoseconds(), 10) + "\n")
-	}
-
-	err = pinger.Run()
+	pingOutput, err := pingerCmd.Output()
+	errMgmt(err)
+	_, err = osRtt.Write(pingOutput)
+	errMgmt(err)
 	wg.Done()
 }
 
 func tcpDumper(wg *sync.WaitGroup, c chan os.Signal) {
-	// Create output file
-	tcpdumpFile, err := os.Create("/tmp/tcpdump_report.pcap")
-	errMgmt(err)
-	defer tcpdumpFile.Close()
-
 	tcpdumper := exec.Command("tcpdump", "-U", "-s", "96", "-w", "/tmp/tcpdump_report.pcap")
 
 	// Handle stop
 	go func() {
-		for _ = range c {
+		for range c {
 			_ = tcpdumper.Process.Signal(os.Interrupt)
 		}
 	}()
 
-	err = tcpdumper.Run()
+	err := tcpdumper.Run()
+	errMgmt(err)
 	wg.Done()
 }
 
