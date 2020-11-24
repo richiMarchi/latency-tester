@@ -1,4 +1,4 @@
-module github.com/richiMarchi/latency-tester/script/customPlotter
+module github.com/richiMarchi/latency-tester/customPlotter
 
 go 1.14
 
