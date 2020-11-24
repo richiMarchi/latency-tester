@@ -1,4 +1,4 @@
-package main
+package customPlotter
 
 import (
 	"encoding/csv"
@@ -16,14 +16,7 @@ import (
 	"strings"
 )
 
-var endpoints = []string{
-	"192.168.31.102:30011",
-	"192.168.31.104:30011",
-	"130.192.31.242:8080",
-	"latency-tester.crownlabs.polito.it"}
-var intervals = []int{10, 25, 50, 100, 250, 500}
-
-func main() {
+func Plot(endpoints []string, intervals []int) {
 	rows := len(endpoints)
 	cols := len(intervals)
 	var min float64 = 10000
