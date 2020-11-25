@@ -28,7 +28,7 @@ func Plot(settings Settings) {
 			var tmpMin float64
 			var tmpMax float64
 			plots[i][j], tmpMin, tmpMax = singleBoxPlot(
-				settings.Endpoints[i].Destination, settings.Endpoints[i].Description, settings.Intervals[j])
+				settings.Endpoints[i].Destination, settings.Endpoints[i].Description, settings.Intervals[j], settings.MsgSizes)
 			min = floats.Min([]float64{min, tmpMin})
 			max = floats.Max([]float64{max, tmpMax})
 		}
@@ -75,7 +75,7 @@ func Plot(settings Settings) {
 	}
 }
 
-func singleBoxPlot(ep_dest string, ep_name string, si int) (*plot.Plot, float64, float64) {
+func singleBoxPlot(ep_dest string, ep_name string, si int, msgSizes []int) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for " + ep_name + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	if err != nil {
@@ -98,10 +98,7 @@ func singleBoxPlot(ep_dest string, ep_name string, si int) (*plot.Plot, float64,
 		}
 	}
 
-	var oneK plotter.Values
-	var tenK plotter.Values
-	var hundredK plotter.Values
-	var thousandK plotter.Values
+	valuesMap := make(map[int]plotter.Values)
 
 	for _, f := range openFiles {
 		records, _ := csv.NewReader(f).ReadAll()
@@ -111,16 +108,11 @@ func singleBoxPlot(ep_dest string, ep_name string, si int) (*plot.Plot, float64,
 				if fail != nil {
 					continue
 				}
-				if strings.Contains(f.Name(), "x1024000.csv") {
-					thousandK = append(thousandK, parsed)
-				} else if strings.Contains(f.Name(), "x102400.csv") {
-					hundredK = append(hundredK, parsed)
-				} else if strings.Contains(f.Name(), "x10240.csv") {
-					tenK = append(tenK, parsed)
-				} else if strings.Contains(f.Name(), "x1024.csv") {
-					oneK = append(oneK, parsed)
-				} else {
-					panic("Cannot get the right size of this file: " + f.Name())
+				parsedSizeVal, err := strconv.ParseInt(f.Name()[strings.LastIndex(f.Name(), "x")+1:len(f.Name())-4], 10, 32)
+				sizeVal := int(parsedSizeVal)
+				errMgmt(err)
+				if intInSlice(sizeVal, msgSizes) {
+					valuesMap[sizeVal] = append(valuesMap[sizeVal], parsed)
 				}
 			}
 		}
@@ -128,32 +120,33 @@ func singleBoxPlot(ep_dest string, ep_name string, si int) (*plot.Plot, float64,
 
 	p.X.Label.Text = "Request Size (KiB)"
 	p.Y.Label.Text = "E2E RTT (ms)"
-	p.NominalX("1", "10", "100", "1000")
+
 	p.Title.Text = ep_name + " - " + strconv.Itoa(si) + "ms"
-	//p.Y.Min = 0
 
+	var nominals []string
+	var mins []float64
+	var maxes []float64
 	w := vg.Points(100)
-	b0, err := plotter.NewBoxPlot(w, 0, oneK)
-	if err != nil {
-		panic(err)
+	var position float64 = 0
+	for k, elem := range valuesMap {
+		nominals = append(nominals, strconv.Itoa(k))
+		boxplot, err := plotter.NewBoxPlot(w, position, elem)
+		errMgmt(err)
+		mins = append(mins, boxplot.AdjLow)
+		maxes = append(maxes, boxplot.AdjHigh)
+		position += 1
+		p.Add(boxplot)
 	}
-	b1, err := plotter.NewBoxPlot(w, 1, tenK)
-	if err != nil {
-		panic(err)
-	}
-	b2, err := plotter.NewBoxPlot(w, 2, hundredK)
-	if err != nil {
-		panic(err)
-	}
-	/*b3, err := plotter.NewBoxPlot(w, 3, thousandK)
-	if err != nil {
-		panic(err)
-	}*/
+	p.NominalX(nominals...)
 
-	p.Add(b0, b1, b2 /*, b3*/)
-	//p.Y.Min = floats.Min([]float64{b0.AdjLow, b1.AdjLow, b2.AdjLow /*, b3.AdjLow*/}) - 1
-	//p.Y.Max = floats.Max([]float64{b0.AdjHigh, b1.AdjHigh, b2.AdjHigh /*, b3.AdjHigh*/}) + 10
+	return p, floats.Min(mins), floats.Max(maxes)
+}
 
-	return p, floats.Min([]float64{b0.AdjLow, b1.AdjLow, b2.AdjLow /*, b3.AdjLow*/}),
-		floats.Max([]float64{b0.AdjHigh, b1.AdjHigh, b2.AdjHigh /*, b3.AdjHigh*/})
+func intInSlice(a int, list []int) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }
