@@ -59,12 +59,18 @@ func main() {
 	go tcpDumper(&wg, c)
 
 	for i := 1; i <= settings.Runs; i++ {
+		log.Println("Running Iperf...")
 		iperfer(i, settings.IperfIp, settings.IperfPort)
+		log.Println("Iperf complete!")
 		startTime := getTimestamp()
 		for _, addr := range settings.Endpoints {
 			for _, inter := range settings.Intervals {
 				for _, size := range settings.MsgSizes {
 					repetitions := int((time.Duration(settings.RunsStepDuration) * time.Second).Milliseconds()) / inter
+					log.Println("Run: " + strconv.Itoa(i) + " - " +
+						"EP: " + addr + " - " +
+						"Inter: " + strconv.Itoa(inter) + " - " +
+						"Msg: " + strconv.Itoa(size))
 					err = exec.Command("./client", "-reps="+strconv.Itoa(repetitions), "-interval="+strconv.Itoa(inter),
 						"-requestPayload="+strconv.Itoa(size), "-responsePayload="+strconv.Itoa(settings.ResponseSize),
 						"-tls="+settings.TlsEnabled, "-log="+strconv.Itoa(i)+"-"+addr+".i"+strconv.Itoa(inter)+".x"+
@@ -89,8 +95,10 @@ func main() {
 	wg.Wait()
 
 	// Plotting
+	log.Println("Plotting...")
 	Plot(settings.Endpoints, settings.Intervals)
 	errMgmt(err)
+	log.Println("Everything's complete!")
 }
 
 func iperfer(run int, ip string, port string) {
@@ -98,7 +106,7 @@ func iperfer(run int, ip string, port string) {
 	errMgmt(err)
 	defer iperfFile.Close()
 
-	iperfRes, err := exec.Command("iperf3", "-c", ip, "-p", port, "-t", "5", "--connect-timeout", "5000").Output()
+	iperfRes, err := exec.Command("iperf3", "-c", ip, "-p", port, "-t", "5").Output()
 	errMgmt(err)
 	_, err = iperfFile.Write(iperfRes)
 	errMgmt(err)

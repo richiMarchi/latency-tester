@@ -13,14 +13,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN go build -o client . && cd plotter && go build -o plotter .
-
-
-# Move to /dist directory as the place for resulting binary folder
-WORKDIR /dist
-
-# Copy binary from build to main folder
-RUN cp /build/client . && cp /build/executable.sh . && cp /build/plotter/plotter .
+RUN go build -o client .
 
 # Run the executable
-ENTRYPOINT ["./executable.sh"]
+ENTRYPOINT ["./client"]
