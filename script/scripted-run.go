@@ -13,18 +13,21 @@ import (
 )
 
 type Settings struct {
-	Runs             int      `yaml:"runs"`
-	RunsInterval     int      `yaml:"runs_interval"`      // in minutes
-	RunsStepDuration int      `yaml:"runs_step_duration"` // in seconds
-	IperfIp          string   `yaml:"iperf_ip"`
-	IperfPort        string   `yaml:"iperf_port"`
-	PingIp           string   `yaml:"ping_ip"`
-	PingInterval     int      `yaml:"ping_interval"` // in seconds
-	Endpoints        []string `yaml:"endpoints"`
-	Intervals        []int    `yaml:"intervals"`     // in milliseconds
-	MsgSizes         []int    `yaml:"msg_sizes"`     // in bytes
-	ResponseSize     int      `yaml:"response_size"` // in bytes
-	TlsEnabled       string   `yaml:"tls_enabled"`
+	Runs             int    `yaml:"runs"`
+	RunsInterval     int    `yaml:"runs_interval"`      // in minutes
+	RunsStepDuration int    `yaml:"runs_step_duration"` // in seconds
+	IperfIp          string `yaml:"iperf_ip"`
+	IperfPort        string `yaml:"iperf_port"`
+	PingIp           string `yaml:"ping_ip"`
+	PingInterval     int    `yaml:"ping_interval"` // in seconds
+	Endpoints        []struct {
+		Description string `yaml:"description"`
+		Destination string `yaml:"destination"`
+	} `yaml:"endpoints"`
+	Intervals    []int  `yaml:"intervals"`     // in milliseconds
+	MsgSizes     []int  `yaml:"msg_sizes"`     // in bytes
+	ResponseSize int    `yaml:"response_size"` // in bytes
+	TlsEnabled   string `yaml:"tls_enabled"`
 }
 
 func main() {
@@ -68,13 +71,13 @@ func main() {
 				for _, size := range settings.MsgSizes {
 					repetitions := int((time.Duration(settings.RunsStepDuration) * time.Second).Milliseconds()) / inter
 					log.Println("Run: " + strconv.Itoa(i) + " - " +
-						"EP: " + addr + " - " +
+						"EP: " + addr.Destination + " - " +
 						"Inter: " + strconv.Itoa(inter) + " - " +
 						"Msg: " + strconv.Itoa(size))
 					err = exec.Command("./client", "-reps="+strconv.Itoa(repetitions), "-interval="+strconv.Itoa(inter),
 						"-requestPayload="+strconv.Itoa(size), "-responsePayload="+strconv.Itoa(settings.ResponseSize),
-						"-tls="+settings.TlsEnabled, "-log="+strconv.Itoa(i)+"-"+addr+".i"+strconv.Itoa(inter)+".x"+
-							strconv.Itoa(size), addr).Run()
+						"-tls="+settings.TlsEnabled, "-log="+strconv.Itoa(i)+"-"+addr.Destination+".i"+strconv.Itoa(inter)+".x"+
+							strconv.Itoa(size), addr.Destination).Run()
 					errMgmt(err)
 				}
 			}
@@ -96,7 +99,7 @@ func main() {
 
 	// Plotting
 	log.Println("Plotting...")
-	Plot(settings.Endpoints, settings.Intervals)
+	Plot(settings)
 	errMgmt(err)
 	log.Println("Everything's complete!")
 }

@@ -6,8 +6,10 @@ iperf_port: "80"
 ping_ip: "130.192.31.254"
 ping_interval: 30
 endpoints:
-- "130.192.31.242:8080"
-- "latency-tester.crownlabs.polito.it"
+- description: "LB-4"
+  destination: "130.192.31.242:8080"
+- description: "LB-7"
+  destination: "latency-tester.crownlabs.polito.it"
 intervals:
 - 10
 - 25

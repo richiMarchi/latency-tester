@@ -16,9 +16,9 @@ import (
 	"strings"
 )
 
-func Plot(endpoints []string, intervals []int) {
-	rows := len(endpoints)
-	cols := len(intervals)
+func Plot(settings Settings) {
+	rows := len(settings.Endpoints)
+	cols := len(settings.Intervals)
 	var min float64 = 10000
 	var max float64 = 0
 	plots := make([][]*plot.Plot, rows)
@@ -27,7 +27,8 @@ func Plot(endpoints []string, intervals []int) {
 		for j := 0; j < cols; j++ {
 			var tmpMin float64
 			var tmpMax float64
-			plots[i][j], tmpMin, tmpMax = singleBoxPlot(endpoints[i], intervals[j])
+			plots[i][j], tmpMin, tmpMax = singleBoxPlot(
+				settings.Endpoints[i].Destination, settings.Endpoints[i].Description, settings.Intervals[j])
 			min = floats.Min([]float64{min, tmpMin})
 			max = floats.Max([]float64{max, tmpMax})
 		}
@@ -74,8 +75,8 @@ func Plot(endpoints []string, intervals []int) {
 	}
 }
 
-func singleBoxPlot(ep string, si int) (*plot.Plot, float64, float64) {
-	fmt.Println("Plot for " + ep + " and send interval " + strconv.Itoa(si))
+func singleBoxPlot(ep_dest string, ep_name string, si int) (*plot.Plot, float64, float64) {
+	fmt.Println("Plot for " + ep_name + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -88,7 +89,7 @@ func singleBoxPlot(ep string, si int) (*plot.Plot, float64, float64) {
 	}
 	var openFiles []*os.File
 	for _, f := range files {
-		if strings.Contains(f.Name(), "-"+ep+".i") && strings.Contains(f.Name(), ".i"+strconv.Itoa(si)+".x") {
+		if strings.Contains(f.Name(), "-"+ep_dest+".i") && strings.Contains(f.Name(), ".i"+strconv.Itoa(si)+".x") {
 			file, err := os.Open("/tmp/" + f.Name())
 			if err != nil {
 				log.Fatal(err)
@@ -128,7 +129,7 @@ func singleBoxPlot(ep string, si int) (*plot.Plot, float64, float64) {
 	p.X.Label.Text = "Request Size (KiB)"
 	p.Y.Label.Text = "E2E RTT (ms)"
 	p.NominalX("1", "10", "100", "1000")
-	p.Title.Text = ep + " - " + strconv.Itoa(si) + "ms"
+	p.Title.Text = ep_name + " - " + strconv.Itoa(si) + "ms"
 	//p.Y.Min = 0
 
 	w := vg.Points(100)
