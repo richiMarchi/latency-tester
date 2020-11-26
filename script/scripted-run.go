@@ -99,7 +99,9 @@ func main() {
 
 	// Plotting
 	log.Println("Plotting...")
-	Plot(settings)
+	SizesBoxPlot(settings)
+	IntervalsBoxPlot(settings)
+	EndpointsBoxPlot(settings)
 	errMgmt(err)
 	log.Println("Everything's complete!")
 }
