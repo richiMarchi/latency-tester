@@ -6,12 +6,14 @@ import (
 	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
 	"gonum.org/v1/plot/vg/draw"
 	"gonum.org/v1/plot/vg/vgimg"
 	"io/ioutil"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -98,6 +100,85 @@ func EndpointsBoxPlot(settings Settings) {
 	}
 
 	commonPlotting(plots, rows, cols, elems*150, "endpointsBoxPlot")
+}
+
+func SizesCDF(settings Settings) {
+	rows := len(settings.Endpoints)
+	cols := len(settings.Intervals)
+	plots := make([][]*plot.Plot, rows)
+	for i := 0; i < rows; i++ {
+		plots[i] = make([]*plot.Plot, cols)
+		for j := 0; j < cols; j++ {
+			plots[i][j] = intXepCDF(settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes)
+		}
+	}
+
+	commonPlotting(plots, rows, cols, 500, "sizesCDF")
+}
+
+func intXepCDF(ep struct {
+	Description string `yaml:"description"`
+	Destination string `yaml:"destination"`
+}, si int, sizes []int) *plot.Plot {
+	fmt.Println("CDF for " + ep.Description + " and send interval " + strconv.Itoa(si))
+	p, err := plot.New()
+	errMgmt(err)
+
+	// Open the desired files
+	files, err := ioutil.ReadDir("/tmp")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var openFiles []*os.File
+	for _, f := range files {
+		if strings.Contains(f.Name(), "-"+ep.Destination+".i"+strconv.Itoa(si)+".x") {
+			file, err := os.Open("/tmp/" + f.Name())
+			if err != nil {
+				log.Fatal(err)
+			}
+			openFiles = append(openFiles, file)
+		}
+	}
+
+	valuesMap := make(map[int]plotter.Values)
+
+	for _, f := range openFiles {
+		parsedSizeVal, err := strconv.ParseInt(f.Name()[strings.LastIndex(f.Name(), "x")+1:len(f.Name())-4], 10, 32)
+		sizeVal := int(parsedSizeVal)
+		errMgmt(err)
+		if intInSlice(sizeVal, sizes) {
+			records, _ := csv.NewReader(f).ReadAll()
+			for i, row := range records {
+				if i != 0 {
+					parsed, fail := strconv.ParseFloat(row[2], 64)
+					if fail != nil {
+						continue
+					}
+					valuesMap[sizeVal] = append(valuesMap[sizeVal], parsed)
+				}
+			}
+		}
+	}
+
+	p.X.Label.Text = "E2E RTT (ms)"
+	p.Y.Label.Text = "P(x)"
+
+	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
+
+	var lines []interface{}
+	for k, elem := range valuesMap {
+		sort.Float64s(elem)
+		var toAdd plotter.XYs
+		for i, y := range yValsCDF(len(elem)) {
+			toAdd = append(toAdd, plotter.XY{X: elem[i], Y: y})
+		}
+		lines = append(lines, strconv.Itoa(k))
+		lines = append(lines, toAdd)
+	}
+	err = plotutil.AddLinePoints(p, lines...)
+	errMgmt(err)
+
+	return p
 }
 
 func commonPlotting(plots [][]*plot.Plot, rows int, cols int, cardWidth int, filename string) {
@@ -358,4 +439,12 @@ func intInSlice(a int, list []int) bool {
 		}
 	}
 	return false
+}
+
+func yValsCDF(length int) []float64 {
+	var toReturn []float64
+	for i := 0; i < length; i++ {
+		toReturn = append(toReturn, float64(i)/float64(length-1))
+	}
+	return toReturn
 }
