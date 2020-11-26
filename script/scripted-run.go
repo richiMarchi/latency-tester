@@ -104,6 +104,7 @@ func main() {
 	EndpointsBoxPlot(settings)
 	SizesCDF(settings)
 	IntervalsCDF(settings)
+	EndpointsCDF(settings)
 	errMgmt(err)
 	log.Println("Everything's complete!")
 }
