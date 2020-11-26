@@ -181,6 +181,85 @@ func intXepCDF(ep struct {
 	return p
 }
 
+func IntervalsCDF(settings Settings) {
+	rows := len(settings.Endpoints)
+	cols := len(settings.MsgSizes)
+	plots := make([][]*plot.Plot, rows)
+	for i := 0; i < rows; i++ {
+		plots[i] = make([]*plot.Plot, cols)
+		for j := 0; j < cols; j++ {
+			plots[i][j] = sizeXepCDF(settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals)
+		}
+	}
+
+	commonPlotting(plots, rows, cols, 500, "intervalsCDF")
+}
+
+func sizeXepCDF(ep struct {
+	Description string `yaml:"description"`
+	Destination string `yaml:"destination"`
+}, msgSize int, sis []int) *plot.Plot {
+	fmt.Println("CDF for " + ep.Description + " and message size " + strconv.Itoa(msgSize))
+	p, err := plot.New()
+	errMgmt(err)
+
+	// Open the desired files
+	files, err := ioutil.ReadDir("/tmp")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var openFiles []*os.File
+	for _, f := range files {
+		if strings.Contains(f.Name(), "-"+ep.Destination+".i") && strings.Contains(f.Name(), ".x"+strconv.Itoa(msgSize)+".csv") {
+			file, err := os.Open("/tmp/" + f.Name())
+			if err != nil {
+				log.Fatal(err)
+			}
+			openFiles = append(openFiles, file)
+		}
+	}
+
+	valuesMap := make(map[int]plotter.Values)
+
+	for _, f := range openFiles {
+		parsedInterVal, err := strconv.ParseInt(f.Name()[strings.LastIndex(f.Name(), ".i")+2:strings.LastIndex(f.Name(), ".x")], 10, 32)
+		interVal := int(parsedInterVal)
+		errMgmt(err)
+		if intInSlice(interVal, sis) {
+			records, _ := csv.NewReader(f).ReadAll()
+			for i, row := range records {
+				if i != 0 {
+					parsed, fail := strconv.ParseFloat(row[2], 64)
+					if fail != nil {
+						continue
+					}
+					valuesMap[interVal] = append(valuesMap[interVal], parsed)
+				}
+			}
+		}
+	}
+
+	p.X.Label.Text = "E2E RTT (ms)"
+	p.Y.Label.Text = "P(x)"
+
+	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
+
+	var lines []interface{}
+	for k, elem := range valuesMap {
+		sort.Float64s(elem)
+		var toAdd plotter.XYs
+		for i, y := range yValsCDF(len(elem)) {
+			toAdd = append(toAdd, plotter.XY{X: elem[i], Y: y})
+		}
+		lines = append(lines, strconv.Itoa(k))
+		lines = append(lines, toAdd)
+	}
+	err = plotutil.AddLinePoints(p, lines...)
+	errMgmt(err)
+
+	return p
+}
+
 func commonPlotting(plots [][]*plot.Plot, rows int, cols int, cardWidth int, filename string) {
 
 	img := vgimg.New(vg.Points(float64(cardWidth*cols)), vg.Points(float64(rows*650)))
