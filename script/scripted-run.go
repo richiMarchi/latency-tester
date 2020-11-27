@@ -105,6 +105,7 @@ func main() {
 	SizesCDF(settings)
 	IntervalsCDF(settings)
 	EndpointsCDF(settings)
+	PingPlotter(settings.PingIp)
 	errMgmt(err)
 	log.Println("Everything's complete!")
 }
