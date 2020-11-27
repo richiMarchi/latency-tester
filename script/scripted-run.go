@@ -154,13 +154,3 @@ func tcpDumper(wg *sync.WaitGroup, c chan os.Signal) {
 	errMgmt(err)
 	wg.Done()
 }
-
-func getTimestamp() time.Time {
-	return time.Now()
-}
-
-func errMgmt(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
