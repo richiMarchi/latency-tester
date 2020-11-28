@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/vg"
 	"gonum.org/v1/plot/vg/draw"
@@ -83,4 +85,15 @@ func errMgmt(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func ackedPacketInSlice(ack uint32, list *[]gopacket.Packet) gopacket.Packet {
+	for i, b := range *list {
+		if b.Layer(layers.LayerTypeTCP).(*layers.TCP).Seq == ack-1 {
+			(*list)[i] = (*list)[len(*list)-1]
+			*list = (*list)[:len(*list)-1]
+			return b
+		}
+	}
+	return nil
 }

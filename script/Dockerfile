@@ -1,4 +1,5 @@
 FROM golang as builder
+RUN apt-get update && apt-get install libpcap-dev -y
 WORKDIR /build
 COPY go.mod .
 COPY go.sum .

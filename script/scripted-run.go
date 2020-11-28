@@ -106,7 +106,7 @@ func main() {
 	IntervalsCDF(settings)
 	EndpointsCDF(settings)
 	PingPlotter(settings.PingIp)
-	errMgmt(err)
+	//TCPdumpPlotter()
 	log.Println("Everything's complete!")
 }
 

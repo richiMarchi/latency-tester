@@ -3,6 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcap"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -50,6 +53,44 @@ func PingPlotter(destination string) {
 	err = plotutil.AddLinePoints(p, "Ping RTT", values)
 
 	if err := p.Save(1000, 1000, "/tmp/pingPlot.png"); err != nil {
+		panic(err)
+	}
+}
+
+func TCPdumpPlotter() {
+	fmt.Println("Plotting TCP RTT")
+	p, err := plot.New()
+	errMgmt(err)
+
+	p.X.Label.Text = "Packets"
+	p.Y.Label.Text = "TCP RTT (ms)"
+	p.Title.Text = "TCP Latency"
+
+	var values plotter.XYs
+	var counter float64 = 0
+	// Open the desired files
+	if handle, err := pcap.OpenOffline("/tmp/tcpdump_report.pcap"); err != nil {
+		panic(err)
+	} else {
+		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+		var tmpPackets []gopacket.Packet
+		for packet := range packetSource.Packets() {
+			if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer != nil {
+				tcp, _ := tcpLayer.(*layers.TCP)
+				if tcp.ACK {
+					seqPacket := ackedPacketInSlice(tcp.Ack, &tmpPackets)
+					if seqPacket != nil {
+						values = append(values, plotter.XY{X: counter, Y: float64(packet.Metadata().Timestamp.Sub(seqPacket.Metadata().Timestamp).Milliseconds())})
+						counter += 1
+					}
+				}
+				tmpPackets = append(tmpPackets, packet)
+			}
+		}
+	}
+	err = plotutil.AddLinePoints(p, "TCP RTT", values)
+
+	if err := p.Save(1000, 1000, "/tmp/tcpPlot.png"); err != nil {
 		panic(err)
 	}
 }
