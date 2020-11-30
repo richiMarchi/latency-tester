@@ -50,7 +50,7 @@ func PingPlotter(destination string) {
 			values = append(values, plotter.XY{X: timeInter - firstTs, Y: rttVal})
 		}
 	}
-	err = plotutil.AddLinePoints(p, "Ping RTT", values)
+	err = plotutil.AddLines(p, "Ping RTT", values)
 
 	if err := p.Save(1000, 1000, "/tmp/pingPlot.png"); err != nil {
 		panic(err)
@@ -88,7 +88,7 @@ func TCPdumpPlotter() {
 			}
 		}
 	}
-	err = plotutil.AddLinePoints(p, "TCP RTT", values)
+	err = plotutil.AddLines(p, "TCP RTT", values)
 
 	if err := p.Save(1000, 1000, "/tmp/tcpPlot.png"); err != nil {
 		panic(err)

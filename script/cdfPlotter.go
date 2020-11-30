@@ -87,7 +87,7 @@ func intXepCDF(ep struct {
 		lines = append(lines, strconv.Itoa(k))
 		lines = append(lines, toAdd)
 	}
-	err = plotutil.AddLinePoints(p, lines...)
+	err = plotutil.AddLines(p, lines...)
 	errMgmt(err)
 
 	return p
@@ -166,7 +166,7 @@ func sizeXepCDF(ep struct {
 		lines = append(lines, strconv.Itoa(k))
 		lines = append(lines, toAdd)
 	}
-	err = plotutil.AddLinePoints(p, lines...)
+	err = plotutil.AddLines(p, lines...)
 	errMgmt(err)
 
 	return p
@@ -244,7 +244,7 @@ func intXsizeCDF(msgSize int, si int, eps []struct {
 		lines = append(lines, k)
 		lines = append(lines, toAdd)
 	}
-	err = plotutil.AddLinePoints(p, lines...)
+	err = plotutil.AddLines(p, lines...)
 	errMgmt(err)
 
 	return p

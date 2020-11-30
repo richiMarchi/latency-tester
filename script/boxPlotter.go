@@ -35,7 +35,7 @@ func SizesBoxPlot(settings Settings) {
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
 			plots[i][j].Y.Min = min - 1
-			plots[i][j].Y.Max = max + 5
+			plots[i][j].Y.Max = max + 3
 		}
 	}
 
