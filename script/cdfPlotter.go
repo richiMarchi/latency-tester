@@ -89,12 +89,19 @@ func intXepCDF(ep struct {
 
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
+	// Get map ordered keys
+	keys := make([]int, 0, len(valuesMap))
+	for k := range valuesMap {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
 	var lines []interface{}
-	for k, elem := range valuesMap {
-		sort.Float64s(elem)
+	for _, k := range keys {
+		sort.Float64s(valuesMap[k])
 		var toAdd plotter.XYs
-		for i, y := range yValsCDF(len(elem)) {
-			toAdd = append(toAdd, plotter.XY{X: elem[i], Y: y})
+		for i, y := range yValsCDF(len(valuesMap[k])) {
+			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
 		}
 		lines = append(lines, strconv.Itoa(k))
 		lines = append(lines, toAdd)
@@ -179,12 +186,19 @@ func sizeXepCDF(ep struct {
 
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
+	// Get map ordered keys
+	keys := make([]int, 0, len(valuesMap))
+	for k := range valuesMap {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
 	var lines []interface{}
-	for k, elem := range valuesMap {
-		sort.Float64s(elem)
+	for _, k := range keys {
+		sort.Float64s(valuesMap[k])
 		var toAdd plotter.XYs
-		for i, y := range yValsCDF(len(elem)) {
-			toAdd = append(toAdd, plotter.XY{X: elem[i], Y: y})
+		for i, y := range yValsCDF(len(valuesMap[k])) {
+			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
 		}
 		lines = append(lines, strconv.Itoa(k))
 		lines = append(lines, toAdd)
@@ -268,12 +282,19 @@ func intXsizeCDF(msgSize int, si int, eps []struct {
 
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "KiB"
 
+	// Get map ordered keys
+	keys := make([]string, 0, len(valuesMap))
+	for k := range valuesMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	var lines []interface{}
-	for k, elem := range valuesMap {
-		sort.Float64s(elem)
+	for _, k := range keys {
+		sort.Float64s(valuesMap[k])
 		var toAdd plotter.XYs
-		for i, y := range yValsCDF(len(elem)) {
-			toAdd = append(toAdd, plotter.XY{X: elem[i], Y: y})
+		for i, y := range yValsCDF(len(valuesMap[k])) {
+			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
 		}
 		lines = append(lines, k)
 		lines = append(lines, toAdd)

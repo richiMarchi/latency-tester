@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -147,15 +148,22 @@ func intXepBoxPlot(ep struct {
 
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
+	// Get map ordered keys
+	keys := make([]int, 0, len(valuesMap))
+	for k := range valuesMap {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
 	var nominals []string
 	var mins []float64
 	var maxes []float64
 	w := vg.Points(100)
 	var position float64 = 0
-	for k, elem := range valuesMap {
-		boxplot, err := plotter.NewBoxPlot(w, position, elem)
+	for _, k := range keys {
+		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
 		errMgmt(err)
-		nominals = append(nominals, strconv.Itoa(k)+"(M:"+strconv.Itoa(int(boxplot.Median))+")")
+		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
 		mins = append(mins, boxplot.AdjLow)
 		maxes = append(maxes, boxplot.AdjHigh)
 		position += 1
@@ -215,15 +223,22 @@ func sizeXepBoxPlot(ep struct {
 
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
+	// Get map ordered keys
+	keys := make([]int, 0, len(valuesMap))
+	for k := range valuesMap {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
 	var nominals []string
 	var mins []float64
 	var maxes []float64
 	w := vg.Points(100)
 	var position float64 = 0
-	for k, elem := range valuesMap {
-		boxplot, err := plotter.NewBoxPlot(w, position, elem)
+	for _, k := range keys {
+		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
 		errMgmt(err)
-		nominals = append(nominals, strconv.Itoa(k)+"(M:"+strconv.Itoa(int(boxplot.Median))+")")
+		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
 		mins = append(mins, boxplot.AdjLow)
 		maxes = append(maxes, boxplot.AdjHigh)
 		position += 1
@@ -282,15 +297,22 @@ func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "KiB"
 
+	// Get map ordered keys
+	keys := make([]string, 0, len(valuesMap))
+	for k := range valuesMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	var nominals []string
 	var mins []float64
 	var maxes []float64
 	w := vg.Points(100)
 	var position float64 = 0
-	for k, elem := range valuesMap {
-		boxplot, err := plotter.NewBoxPlot(w, position, elem)
+	for _, k := range keys {
+		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
 		errMgmt(err)
-		nominals = append(nominals, k+"(M:"+strconv.Itoa(int(boxplot.Median))+")")
+		nominals = append(nominals, k+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
 		mins = append(mins, boxplot.AdjLow)
 		maxes = append(maxes, boxplot.AdjHigh)
 		position += 1
