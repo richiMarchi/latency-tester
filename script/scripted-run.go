@@ -116,7 +116,6 @@ func iperfer(run int, ip string, port string) {
 	defer iperfFile.Close()
 
 	iperfRes, err := exec.Command("timeout", "10", "iperf3", "-c", ip, "-p", port, "-t", "5").Output()
-	errMgmt(err)
 	_, err = iperfFile.Write(iperfRes)
 	errMgmt(err)
 }

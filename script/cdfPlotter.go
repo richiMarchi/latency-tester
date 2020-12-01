@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
+	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -17,11 +18,22 @@ import (
 func SizesCDF(settings Settings) {
 	rows := len(settings.Endpoints)
 	cols := len(settings.Intervals)
+	var min float64 = 10000
+	var max float64 = 0
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
 		for j := 0; j < cols; j++ {
 			plots[i][j] = intXepCDF(settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes)
+			min = floats.Min([]float64{min, plots[i][j].X.Min})
+			max = floats.Max([]float64{max, plots[i][j].X.Max})
+		}
+	}
+
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			plots[i][j].X.Min = min
+			plots[i][j].X.Max = max
 		}
 	}
 
@@ -96,11 +108,22 @@ func intXepCDF(ep struct {
 func IntervalsCDF(settings Settings) {
 	rows := len(settings.Endpoints)
 	cols := len(settings.MsgSizes)
+	var min float64 = 10000
+	var max float64 = 0
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
 		for j := 0; j < cols; j++ {
 			plots[i][j] = sizeXepCDF(settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals)
+			min = floats.Min([]float64{min, plots[i][j].X.Min})
+			max = floats.Max([]float64{max, plots[i][j].X.Max})
+		}
+	}
+
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			plots[i][j].X.Min = min
+			plots[i][j].X.Max = max
 		}
 	}
 
@@ -175,11 +198,22 @@ func sizeXepCDF(ep struct {
 func EndpointsCDF(settings Settings) {
 	rows := len(settings.MsgSizes)
 	cols := len(settings.Intervals)
+	var min float64 = 10000
+	var max float64 = 0
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
 		for j := 0; j < cols; j++ {
 			plots[i][j] = intXsizeCDF(settings.MsgSizes[i], settings.Intervals[j], settings.Endpoints)
+			min = floats.Min([]float64{min, plots[i][j].X.Min})
+			max = floats.Max([]float64{max, plots[i][j].X.Max})
+		}
+	}
+
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			plots[i][j].X.Min = min
+			plots[i][j].X.Max = max
 		}
 	}
 
