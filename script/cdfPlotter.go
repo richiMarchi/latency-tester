@@ -86,7 +86,7 @@ func intXepCDF(ep struct {
 
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
-
+	p.X.Tick.Marker = commaTicks{}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
 	// Get map ordered keys
@@ -183,7 +183,7 @@ func sizeXepCDF(ep struct {
 
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
-
+	p.X.Tick.Marker = commaTicks{}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
 	// Get map ordered keys
@@ -279,7 +279,7 @@ func intXsizeCDF(msgSize int, si int, eps []struct {
 
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
-
+	p.X.Tick.Marker = commaTicks{}
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "KiB"
 
 	// Get map ordered keys

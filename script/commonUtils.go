@@ -9,6 +9,7 @@ import (
 	"gonum.org/v1/plot/vg/vgimg"
 	"log"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -85,6 +86,23 @@ func errMgmt(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+type commaTicks struct{}
+
+var TICKS = 15
+
+// Ticks computes the default tick marks, but inserts commas
+// into the labels for the major tick marks.
+func (commaTicks) Ticks(min, max float64) []plot.Tick {
+	var tks []plot.Tick
+	interval := max - min
+	step := interval / float64(TICKS)
+	for i := 0; i <= TICKS; i++ {
+		tks = append(tks, plot.Tick{Value: min, Label: strconv.FormatFloat(min, 'f', 1, 64)})
+		min += step
+	}
+	return tks
 }
 
 func ackedPacketInSlice(ack uint32, list *[]gopacket.Packet) gopacket.Packet {

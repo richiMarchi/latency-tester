@@ -145,7 +145,7 @@ func intXepBoxPlot(ep struct {
 
 	p.X.Label.Text = "Request Size (KiB)"
 	p.Y.Label.Text = "E2E RTT (ms)"
-
+	p.Y.Tick.Marker = commaTicks{}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
 	// Get map ordered keys
@@ -220,7 +220,7 @@ func sizeXepBoxPlot(ep struct {
 
 	p.X.Label.Text = "Send Interval (ms)"
 	p.Y.Label.Text = "E2E RTT (ms)"
-
+	p.Y.Tick.Marker = commaTicks{}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
 	// Get map ordered keys
@@ -294,7 +294,7 @@ func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 
 	p.X.Label.Text = "Endpoint"
 	p.Y.Label.Text = "E2E RTT (ms)"
-
+	p.Y.Tick.Marker = commaTicks{}
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "KiB"
 
 	// Get map ordered keys
