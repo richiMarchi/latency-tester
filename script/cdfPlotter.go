@@ -9,6 +9,7 @@ import (
 	"gonum.org/v1/plot/plotutil"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -18,8 +19,8 @@ import (
 func SizesCDF(settings Settings) {
 	rows := len(settings.Endpoints)
 	cols := len(settings.Intervals)
-	var min float64 = 10000
-	var max float64 = 0
+	min := math.Inf(1)
+	max := math.Inf(-1)
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
@@ -99,6 +100,8 @@ func intXepCDF(ep struct {
 	var lines []interface{}
 	for _, k := range keys {
 		sort.Float64s(valuesMap[k])
+		toRemove := len(valuesMap[k]) / 100
+		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove]
 		var toAdd plotter.XYs
 		for i, y := range yValsCDF(len(valuesMap[k])) {
 			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
@@ -115,8 +118,8 @@ func intXepCDF(ep struct {
 func IntervalsCDF(settings Settings) {
 	rows := len(settings.Endpoints)
 	cols := len(settings.MsgSizes)
-	var min float64 = 10000
-	var max float64 = 0
+	min := math.Inf(1)
+	max := math.Inf(-1)
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
@@ -196,6 +199,8 @@ func sizeXepCDF(ep struct {
 	var lines []interface{}
 	for _, k := range keys {
 		sort.Float64s(valuesMap[k])
+		toRemove := len(valuesMap[k]) / 100
+		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove]
 		var toAdd plotter.XYs
 		for i, y := range yValsCDF(len(valuesMap[k])) {
 			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
@@ -212,8 +217,8 @@ func sizeXepCDF(ep struct {
 func EndpointsCDF(settings Settings) {
 	rows := len(settings.MsgSizes)
 	cols := len(settings.Intervals)
-	var min float64 = 10000
-	var max float64 = 0
+	min := math.Inf(1)
+	max := math.Inf(-1)
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
@@ -292,6 +297,8 @@ func intXsizeCDF(msgSize int, si int, eps []struct {
 	var lines []interface{}
 	for _, k := range keys {
 		sort.Float64s(valuesMap[k])
+		toRemove := len(valuesMap[k]) / 100
+		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove]
 		var toAdd plotter.XYs
 		for i, y := range yValsCDF(len(valuesMap[k])) {
 			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})

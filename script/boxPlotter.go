@@ -9,6 +9,7 @@ import (
 	"gonum.org/v1/plot/vg"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -19,8 +20,8 @@ func SizesBoxPlot(settings Settings) {
 	rows := len(settings.Endpoints)
 	cols := len(settings.Intervals)
 	elems := len(settings.MsgSizes)
-	var min float64 = 10000
-	var max float64 = 0
+	min := math.Inf(1)
+	max := math.Inf(-1)
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
@@ -47,8 +48,8 @@ func IntervalsBoxPlot(settings Settings) {
 	rows := len(settings.Endpoints)
 	cols := len(settings.MsgSizes)
 	elems := len(settings.Intervals)
-	var min float64 = 10000
-	var max float64 = 0
+	min := math.Inf(1)
+	max := math.Inf(-1)
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
@@ -75,8 +76,8 @@ func EndpointsBoxPlot(settings Settings) {
 	rows := len(settings.MsgSizes)
 	cols := len(settings.Intervals)
 	elems := len(settings.Endpoints)
-	var min float64 = 10000
-	var max float64 = 0
+	min := math.Inf(1)
+	max := math.Inf(-1)
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
@@ -163,6 +164,9 @@ func intXepBoxPlot(ep struct {
 	for _, k := range keys {
 		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
 		errMgmt(err)
+		sort.Float64s(valuesMap[k])
+		toRemove := len(valuesMap[k]) / 100
+		valuesMap[k] = valuesMap[k][toRemove*3 : len(valuesMap[k])-toRemove*3]
 		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
 		mins = append(mins, boxplot.AdjLow)
 		maxes = append(maxes, boxplot.AdjHigh)
@@ -236,6 +240,9 @@ func sizeXepBoxPlot(ep struct {
 	w := vg.Points(100)
 	var position float64 = 0
 	for _, k := range keys {
+		sort.Float64s(valuesMap[k])
+		toRemove := len(valuesMap[k]) / 100
+		valuesMap[k] = valuesMap[k][toRemove*3 : len(valuesMap[k])-toRemove*3]
 		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
 		errMgmt(err)
 		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
@@ -310,6 +317,9 @@ func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 	w := vg.Points(100)
 	var position float64 = 0
 	for _, k := range keys {
+		sort.Float64s(valuesMap[k])
+		toRemove := len(valuesMap[k]) / 100
+		valuesMap[k] = valuesMap[k][toRemove*3 : len(valuesMap[k])-toRemove*3]
 		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
 		errMgmt(err)
 		nominals = append(nominals, k+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
