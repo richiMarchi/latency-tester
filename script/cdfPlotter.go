@@ -101,7 +101,7 @@ func intXepCDF(ep struct {
 	for _, k := range keys {
 		sort.Float64s(valuesMap[k])
 		toRemove := len(valuesMap[k]) / 100
-		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove]
+		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove*2]
 		var toAdd plotter.XYs
 		for i, y := range yValsCDF(len(valuesMap[k])) {
 			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
@@ -200,7 +200,7 @@ func sizeXepCDF(ep struct {
 	for _, k := range keys {
 		sort.Float64s(valuesMap[k])
 		toRemove := len(valuesMap[k]) / 100
-		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove]
+		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove*2]
 		var toAdd plotter.XYs
 		for i, y := range yValsCDF(len(valuesMap[k])) {
 			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
@@ -298,7 +298,7 @@ func intXsizeCDF(msgSize int, si int, eps []struct {
 	for _, k := range keys {
 		sort.Float64s(valuesMap[k])
 		toRemove := len(valuesMap[k]) / 100
-		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove]
+		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove*2]
 		var toAdd plotter.XYs
 		for i, y := range yValsCDF(len(valuesMap[k])) {
 			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
