@@ -11,7 +11,7 @@ COPY . .
 RUN go build -o script . && cd client && go build -o client .
 
 FROM ubuntu
-RUN apt-get update && apt-get install -y traceroute tcpdump iperf3 iputils-ping
+RUN apt-get update && apt-get install -y traceroute tcpdump iperf3 iputils-ping tshark
 COPY --from=builder /build/script .
 COPY --from=builder /build/client .
 ENTRYPOINT ["./script"]

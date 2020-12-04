@@ -55,16 +55,18 @@ func main() {
 	log.Println("TCP congestion control algorithm: ", val)
 
 	// Start ping and tcpdump in background
-	c := make(chan os.Signal, 2)
+	stopPing := make(chan os.Signal, 1)
 	var wg sync.WaitGroup
-	wg.Add(2)
-	go pingThread(&wg, settings.PingIp, settings.PingInterval, c)
-	go tcpDumper(&wg, c)
+	wg.Add(1)
+	go pingThread(&wg, settings.PingIp, settings.PingInterval, stopPing)
 
 	for i := 1; i <= settings.Runs; i++ {
 		log.Println("Running Iperf...")
 		iperfer(i, settings.IperfIp, settings.IperfPort)
 		log.Println("Iperf complete!")
+		stopTcpdump := make(chan os.Signal, 1)
+		wg.Add(1)
+		go tcpDumper(i, &wg, stopTcpdump)
 		startTime := getTimestamp()
 		for _, addr := range settings.Endpoints {
 			for _, inter := range settings.Intervals {
@@ -82,6 +84,7 @@ func main() {
 				}
 			}
 		}
+		stopTcpdump <- os.Interrupt
 		if i != settings.Runs {
 			elapsed := getTimestamp().Sub(startTime)
 			waitTime := time.Duration(settings.RunsInterval)*time.Minute - elapsed
@@ -93,8 +96,7 @@ func main() {
 		}
 	}
 
-	c <- os.Interrupt
-	c <- os.Interrupt
+	stopPing <- os.Interrupt
 	wg.Wait()
 
 	// Plotting
@@ -106,7 +108,7 @@ func main() {
 	IntervalsCDF(settings)
 	EndpointsCDF(settings)
 	PingPlotter(settings.PingIp)
-	//TCPdumpPlotter()
+	TCPdumpPlotter(settings.Runs)
 	log.Println("Everything's complete!")
 }
 
@@ -140,8 +142,8 @@ func pingThread(wg *sync.WaitGroup, address string, interval int, c chan os.Sign
 	wg.Done()
 }
 
-func tcpDumper(wg *sync.WaitGroup, c chan os.Signal) {
-	tcpdumper := exec.Command("tcpdump", "-U", "-s", "96", "-w", "/tmp/tcpdump_report.pcap")
+func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal) {
+	tcpdumper := exec.Command("tcpdump", "-U", "-s", "96", "-w", "/tmp/"+strconv.Itoa(run)+"-tcpdump_report.pcap")
 
 	// Handle stop
 	go func() {
