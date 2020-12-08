@@ -30,6 +30,8 @@ type Settings struct {
 	TlsEnabled   string `yaml:"tls_enabled"`
 }
 
+const LogPath = "/tmp/"
+
 func main() {
 
 	if len(os.Args) == 1 {
@@ -37,7 +39,7 @@ func main() {
 	}
 
 	// Settings parsing
-	file, err := ioutil.ReadFile("/tmp/" + os.Args[1])
+	file, err := ioutil.ReadFile(LogPath + os.Args[1])
 	errMgmt(err)
 	var settings Settings
 	err = yaml.Unmarshal(file, &settings)
@@ -101,19 +103,13 @@ func main() {
 
 	// Plotting
 	log.Println("Plotting...")
-	SizesBoxPlot(settings)
-	IntervalsBoxPlot(settings)
-	EndpointsBoxPlot(settings)
-	SizesCDF(settings)
-	IntervalsCDF(settings)
-	EndpointsCDF(settings)
-	PingPlotter(settings.PingIp)
-	TCPdumpPlotter(settings.Runs)
+	err = exec.Command("./plotter", os.Args[1]).Run()
+	errMgmt(err)
 	log.Println("Everything's complete!")
 }
 
 func iperfer(run int, ip string, port string) {
-	iperfFile, err := os.Create("/tmp/" + strconv.Itoa(run) + "-iperf_report.txt")
+	iperfFile, err := os.Create(LogPath + strconv.Itoa(run) + "-iperf_report.txt")
 	errMgmt(err)
 	defer iperfFile.Close()
 
@@ -123,7 +119,7 @@ func iperfer(run int, ip string, port string) {
 }
 
 func pingThread(wg *sync.WaitGroup, address string, interval int, c chan os.Signal) {
-	osRtt, err := os.Create("/tmp/ping_report.txt")
+	osRtt, err := os.Create(LogPath + "ping_report.txt")
 	errMgmt(err)
 	defer osRtt.Close()
 	pingerCmd := exec.Command("ping", address, "-i", strconv.Itoa(interval), "-D")
@@ -143,7 +139,7 @@ func pingThread(wg *sync.WaitGroup, address string, interval int, c chan os.Sign
 }
 
 func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal) {
-	tcpdumper := exec.Command("tcpdump", "-U", "-s", "96", "-w", "/tmp/"+strconv.Itoa(run)+"-tcpdump_report.pcap")
+	tcpdumper := exec.Command("tcpdump", "-U", "-s", "96", "-w", LogPath+strconv.Itoa(run)+"-tcpdump_report.pcap")
 
 	// Handle stop
 	go func() {
@@ -155,4 +151,14 @@ func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal) {
 	err := tcpdumper.Run()
 	errMgmt(err)
 	wg.Done()
+}
+
+func getTimestamp() time.Time {
+	return time.Now()
+}
+
+func errMgmt(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
 }

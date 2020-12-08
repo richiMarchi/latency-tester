@@ -24,7 +24,7 @@ func PingPlotter(destination string) {
 	p.Title.Text = "Ping destination: " + destination
 
 	// Open the desired files
-	file, err := os.Open("/tmp/ping_report.txt")
+	file, err := os.Open(LogPath + "ping_report.txt")
 	errMgmt(err)
 
 	var values plotter.XYs
@@ -49,7 +49,7 @@ func PingPlotter(destination string) {
 	}
 	err = plotutil.AddLines(p, "Ping RTT", values)
 
-	if err := p.Save(1500, 1000, "/tmp/pingPlot.png"); err != nil {
+	if err := p.Save(1500, 1000, LogPath+"pingPlot.pdf"); err != nil {
 		panic(err)
 	}
 }
@@ -66,8 +66,8 @@ func TCPdumpPlotter(runs int) {
 		p.Y.Tick.Marker = commaTicks{}
 
 		fileOtp, err := exec.Command("tshark",
-			"-r", "/tmp/"+strconv.Itoa(i)+"-tcpdump_report.pcap",
-			"-Y", "tcp.analysis.ack_rtt",
+			"-r", LogPath+strconv.Itoa(i)+"-tcpdump_report.pcap",
+			"-Y", "tcp.analysis.ack_rtt and ip.dst==172.0.0.0/8",
 			"-e", "frame.time_epoch",
 			"-e", "tcp.analysis.ack_rtt",
 			"-T", "fields",
@@ -95,7 +95,7 @@ func TCPdumpPlotter(runs int) {
 
 		err = plotutil.AddLines(p, "ACK RTT", values)
 
-		if err := p.Save(1500, 1000, "/tmp/"+strconv.Itoa(i)+"-tcpPlot.png"); err != nil {
+		if err := p.Save(1500, 1000, LogPath+strconv.Itoa(i)+"-tcpPlot.pdf"); err != nil {
 			panic(err)
 		}
 	}

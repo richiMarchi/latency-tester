@@ -41,7 +41,7 @@ func SizesBoxPlot(settings Settings) {
 		}
 	}
 
-	commonPlotting(plots, rows, cols, cols*elems*200, "sizesBoxPlot")
+	commonPlotting(plots, rows, cols, 100+cols*elems*200, "sizesBoxPlot")
 }
 
 func IntervalsBoxPlot(settings Settings) {
@@ -69,7 +69,7 @@ func IntervalsBoxPlot(settings Settings) {
 		}
 	}
 
-	commonPlotting(plots, rows, cols, cols*elems*200, "intervalsBoxPlot")
+	commonPlotting(plots, rows, cols, 100+cols*elems*200, "intervalsBoxPlot")
 }
 
 func EndpointsBoxPlot(settings Settings) {
@@ -97,7 +97,7 @@ func EndpointsBoxPlot(settings Settings) {
 		}
 	}
 
-	commonPlotting(plots, rows, cols, cols*elems*200, "endpointsBoxPlot")
+	commonPlotting(plots, rows, cols, 100+cols*elems*200, "endpointsBoxPlot")
 }
 
 func intXepBoxPlot(ep struct {
@@ -109,14 +109,14 @@ func intXepBoxPlot(ep struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir("/tmp")
+	files, err := ioutil.ReadDir(LogPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var openFiles []*os.File
 	for _, f := range files {
 		if strings.Contains(f.Name(), "-"+ep.Destination+".i"+strconv.Itoa(si)+".x") {
-			file, err := os.Open("/tmp/" + f.Name())
+			file, err := os.Open(LogPath + f.Name())
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -187,14 +187,14 @@ func sizeXepBoxPlot(ep struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir("/tmp")
+	files, err := ioutil.ReadDir(LogPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var openFiles []*os.File
 	for _, f := range files {
 		if strings.Contains(f.Name(), "-"+ep.Destination+".i") && strings.Contains(f.Name(), ".x"+strconv.Itoa(msgSize)+".csv") {
-			file, err := os.Open("/tmp/" + f.Name())
+			file, err := os.Open(LogPath + f.Name())
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -265,14 +265,14 @@ func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir("/tmp")
+	files, err := ioutil.ReadDir(LogPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var openFiles []*os.File
 	for _, f := range files {
 		if strings.Contains(f.Name(), ".i"+strconv.Itoa(si)+".x"+strconv.Itoa(msgSize)+".csv") {
-			file, err := os.Open("/tmp/" + f.Name())
+			file, err := os.Open(LogPath + f.Name())
 			if err != nil {
 				log.Fatal(err)
 			}

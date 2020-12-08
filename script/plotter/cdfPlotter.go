@@ -50,14 +50,14 @@ func intXepCDF(ep struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir("/tmp")
+	files, err := ioutil.ReadDir(LogPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var openFiles []*os.File
 	for _, f := range files {
 		if strings.Contains(f.Name(), "-"+ep.Destination+".i"+strconv.Itoa(si)+".x") {
-			file, err := os.Open("/tmp/" + f.Name())
+			file, err := os.Open(LogPath + f.Name())
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -149,14 +149,14 @@ func sizeXepCDF(ep struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir("/tmp")
+	files, err := ioutil.ReadDir(LogPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var openFiles []*os.File
 	for _, f := range files {
 		if strings.Contains(f.Name(), "-"+ep.Destination+".i") && strings.Contains(f.Name(), ".x"+strconv.Itoa(msgSize)+".csv") {
-			file, err := os.Open("/tmp/" + f.Name())
+			file, err := os.Open(LogPath + f.Name())
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -248,14 +248,14 @@ func intXsizeCDF(msgSize int, si int, eps []struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir("/tmp")
+	files, err := ioutil.ReadDir(LogPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var openFiles []*os.File
 	for _, f := range files {
 		if strings.Contains(f.Name(), ".i"+strconv.Itoa(si)+".x"+strconv.Itoa(msgSize)+".csv") {
-			file, err := os.Open("/tmp/" + f.Name())
+			file, err := os.Open(LogPath + f.Name())
 			if err != nil {
 				log.Fatal(err)
 			}

@@ -1,12 +1,10 @@
 package main
 
 import (
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/vg"
 	"gonum.org/v1/plot/vg/draw"
-	"gonum.org/v1/plot/vg/vgimg"
+	"gonum.org/v1/plot/vg/vgpdf"
 	"log"
 	"os"
 	"strconv"
@@ -15,7 +13,7 @@ import (
 
 func commonPlotting(plots [][]*plot.Plot, rows int, cols int, cardWidth int, filename string) {
 
-	img := vgimg.New(vg.Points(float64(cardWidth)), vg.Points(float64(rows*650)))
+	img := vgpdf.New(vg.Points(float64(cardWidth)), vg.Points(float64(rows*650)))
 	dc := draw.New(img)
 
 	t := draw.Tiles{
@@ -38,13 +36,12 @@ func commonPlotting(plots [][]*plot.Plot, rows int, cols int, cardWidth int, fil
 		}
 	}
 
-	w, err := os.Create("/tmp/" + filename + ".png")
+	w, err := os.Create(LogPath + filename + ".pdf")
 	if err != nil {
 		panic(err)
 	}
 	defer w.Close()
-	png := vgimg.PngCanvas{Canvas: img}
-	if _, err := png.WriteTo(w); err != nil {
+	if _, err := img.WriteTo(w); err != nil {
 		panic(err)
 	}
 }
@@ -103,15 +100,4 @@ func (commaTicks) Ticks(min, max float64) []plot.Tick {
 		min += step
 	}
 	return tks
-}
-
-func ackedPacketInSlice(ack uint32, list *[]gopacket.Packet) gopacket.Packet {
-	for i, b := range *list {
-		if b.Layer(layers.LayerTypeTCP).(*layers.TCP).Seq == ack-1 {
-			(*list)[i] = (*list)[len(*list)-1]
-			*list = (*list)[:len(*list)-1]
-			return b
-		}
-	}
-	return nil
 }
