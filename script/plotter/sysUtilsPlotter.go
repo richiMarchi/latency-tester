@@ -11,6 +11,7 @@ import (
 	"gonum.org/v1/plot/plotutil"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -50,6 +51,14 @@ func PingPlotter(destination string) {
 			values = append(values, plotter.XY{X: timeInter - firstTs, Y: rttVal})
 		}
 	}
+	sort.Slice(values, func(i, j int) bool {
+		return values[i].Y < values[j].Y
+	})
+	toRemove := len(values) / 100
+	values = values[:len(values)-toRemove]
+	sort.Slice(values, func(i, j int) bool {
+		return values[i].X < values[j].X
+	})
 	err = plotutil.AddLines(p, "Ping RTT", values)
 
 	if err := p.Save(1500, 1000, LogPath+"pingPlot.pdf"); err != nil {
