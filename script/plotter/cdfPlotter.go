@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
+	"go-hep.org/x/hep/hplot"
 	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
@@ -87,7 +88,7 @@ func intXepCDF(ep struct {
 
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
-	p.X.Tick.Marker = commaTicks{}
+	p.X.Tick.Marker = hplot.Ticks{N: 15}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
 	// Get map ordered keys
@@ -186,7 +187,7 @@ func sizeXepCDF(ep struct {
 
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
-	p.X.Tick.Marker = commaTicks{}
+	p.X.Tick.Marker = hplot.Ticks{N: 15}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
 	// Get map ordered keys
@@ -284,7 +285,7 @@ func intXsizeCDF(msgSize int, si int, eps []struct {
 
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
-	p.X.Tick.Marker = commaTicks{}
+	p.X.Tick.Marker = hplot.Ticks{N: 15}
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "KiB"
 
 	// Get map ordered keys

@@ -7,8 +7,6 @@ import (
 	"gonum.org/v1/plot/vg/vgpdf"
 	"log"
 	"os"
-	"strconv"
-	"time"
 )
 
 func commonPlotting(plots [][]*plot.Plot, rows int, cols int, cardWidth int, filename string) {
@@ -75,29 +73,8 @@ func yValsCDF(length int) []float64 {
 	return toReturn
 }
 
-func getTimestamp() time.Time {
-	return time.Now()
-}
-
 func errMgmt(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-type commaTicks struct{}
-
-var TICKS = 15
-
-// Ticks computes the default tick marks, but inserts commas
-// into the labels for the major tick marks.
-func (commaTicks) Ticks(min, max float64) []plot.Tick {
-	var tks []plot.Tick
-	interval := max - min
-	step := interval / float64(TICKS)
-	for i := 0; i <= TICKS; i++ {
-		tks = append(tks, plot.Tick{Value: min, Label: strconv.FormatFloat(min, 'f', 1, 64)})
-		min += step
-	}
-	return tks
 }

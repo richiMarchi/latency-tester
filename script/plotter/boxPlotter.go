@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
+	"go-hep.org/x/hep/hplot"
 	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
@@ -146,7 +147,7 @@ func intXepBoxPlot(ep struct {
 
 	p.X.Label.Text = "Request Size (KiB)"
 	p.Y.Label.Text = "E2E RTT (ms)"
-	p.Y.Tick.Marker = commaTicks{}
+	p.Y.Tick.Marker = hplot.Ticks{N: 15}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
 	// Get map ordered keys
@@ -224,7 +225,7 @@ func sizeXepBoxPlot(ep struct {
 
 	p.X.Label.Text = "Send Interval (ms)"
 	p.Y.Label.Text = "E2E RTT (ms)"
-	p.Y.Tick.Marker = commaTicks{}
+	p.Y.Tick.Marker = hplot.Ticks{N: 15}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
 	// Get map ordered keys
@@ -301,7 +302,7 @@ func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 
 	p.X.Label.Text = "Endpoint"
 	p.Y.Label.Text = "E2E RTT (ms)"
-	p.Y.Tick.Marker = commaTicks{}
+	p.Y.Tick.Marker = hplot.Ticks{N: 15}
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "KiB"
 
 	// Get map ordered keys

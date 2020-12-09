@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"fmt"
+	"go-hep.org/x/hep/hplot"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -22,6 +23,8 @@ func PingPlotter(destination string) {
 	p.X.Label.Text = "Time (s)"
 	p.Y.Label.Text = "OS RTT (ms)"
 	p.Title.Text = "Ping destination: " + destination
+	p.X.Tick.Marker = hplot.Ticks{N: 15}
+	p.Y.Tick.Marker = hplot.Ticks{N: 15}
 
 	// Open the desired files
 	file, err := os.Open(LogPath + "ping_report.txt")
@@ -63,7 +66,8 @@ func TCPdumpPlotter(runs int) {
 		p.X.Label.Text = "Time (s)"
 		p.Y.Label.Text = "TCP RTT (ms)"
 		p.Title.Text = "TCP ACK Latency"
-		p.Y.Tick.Marker = commaTicks{}
+		p.Y.Tick.Marker = hplot.Ticks{N: 15}
+		p.X.Tick.Marker = hplot.Ticks{N: 15}
 
 		fileOtp, err := exec.Command("tshark",
 			"-r", LogPath+strconv.Itoa(i)+"-tcpdump_report.pcap",
