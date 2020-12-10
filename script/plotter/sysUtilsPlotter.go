@@ -9,6 +9,9 @@ import (
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
+	"gonum.org/v1/plot/vg"
+	"gonum.org/v1/plot/vg/draw"
+	"gonum.org/v1/plot/vg/vgpdf"
 	"os"
 	"os/exec"
 	"sort"
@@ -66,23 +69,16 @@ func PingPlotter(destination string) {
 	}
 }
 
-func TCPdumpPlotter(runs int) {
-	for i := 1; i <= runs; i++ {
+func TCPdumpPlotter(settings Settings) {
+	for i := 1; i <= settings.Runs; i++ {
 		fmt.Println("Plotting TCP RTT run: " + strconv.Itoa(i))
-		p, err := plot.New()
-		errMgmt(err)
-
-		p.X.Label.Text = "Time (s)"
-		p.Y.Label.Text = "TCP RTT (ms)"
-		p.Title.Text = "TCP ACK Latency"
-		p.Y.Tick.Marker = hplot.Ticks{N: 15}
-		p.X.Tick.Marker = hplot.Ticks{N: 15}
 
 		fileOtp, err := exec.Command("tshark",
 			"-r", LogPath+strconv.Itoa(i)+"-tcpdump_report.pcap",
 			"-Y", "tcp.analysis.ack_rtt and ip.dst==172.0.0.0/8",
 			"-e", "frame.time_epoch",
 			"-e", "tcp.analysis.ack_rtt",
+			"-e", "tcp.stream",
 			"-T", "fields",
 			"-E", "separator=,",
 			"-E", "quote=d").Output()
@@ -90,8 +86,16 @@ func TCPdumpPlotter(runs int) {
 
 		var values plotter.XYs
 		var firstTs float64
+		var previousStream = 0
 		records, _ := csv.NewReader(bytes.NewReader(fileOtp)).ReadAll()
-		for _, row := range records {
+
+		pdfToSave := vgpdf.New(vg.Points(1500), vg.Points(1000))
+		w, err := os.Create(LogPath + strconv.Itoa(i) + "-tcpPlot.pdf")
+		if err != nil {
+			panic(err)
+		}
+
+		for index, row := range records {
 			ts, fail := strconv.ParseFloat(row[0], 64)
 			if fail != nil {
 				continue
@@ -103,13 +107,46 @@ func TCPdumpPlotter(runs int) {
 			if len(values) == 0 {
 				firstTs = ts
 			}
+			streamId, _ := strconv.Atoi(row[2])
+			if previousStream != streamId || index == len(records)-1 {
+				if previousStream != 0 {
+					pdfToSave.NextPage()
+				}
+				// If it is the last iteration, add the last record before saving to pdf
+				if index == len(records)-1 {
+					values = append(values, plotter.XY{X: ts - firstTs, Y: rtt * 1000})
+				}
+				p, err := plot.New()
+				errMgmt(err)
+				p.X.Label.Text = "Time (s)"
+				p.Y.Label.Text = "TCP RTT (ms)"
+				p.Y.Tick.Marker = hplot.Ticks{N: 15}
+				p.X.Tick.Marker = hplot.Ticks{N: 15}
+				for y, addr := range settings.Endpoints {
+					for j, inter := range settings.Intervals {
+						for k, size := range settings.MsgSizes {
+							if y+j+k == previousStream {
+								p.Title.Text = "TCP ACK Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
+							}
+						}
+					}
+				}
+				err = plotutil.AddLines(p, "ACK RTT", values)
+				p.Draw(draw.New(pdfToSave))
+				values = values[:0]
+				previousStream = streamId
+			}
 			values = append(values, plotter.XY{X: ts - firstTs, Y: rtt * 1000})
 		}
 
-		err = plotutil.AddLines(p, "ACK RTT", values)
-
-		if err := p.Save(1500, 1000, LogPath+strconv.Itoa(i)+"-tcpPlot.pdf"); err != nil {
+		if _, err := pdfToSave.WriteTo(w); err != nil {
 			panic(err)
 		}
+
+		w.Close()
+
+		/*if err := p.Save(1500, 1000, LogPath+strconv.Itoa(i)+"-tcpPlot.pdf"); err != nil {
+			panic(err)
+		}*/
 	}
 }

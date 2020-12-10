@@ -50,5 +50,5 @@ func main() {
 	IntervalsCDF(settings)
 	EndpointsCDF(settings)
 	PingPlotter(settings.PingIp)
-	TCPdumpPlotter(settings.Runs)
+	TCPdumpPlotter(settings)
 }
