@@ -51,4 +51,5 @@ func main() {
 	EndpointsCDF(settings)
 	PingPlotter(settings.PingIp)
 	TCPdumpPlotter(settings)
+	RttPlotter(settings)
 }

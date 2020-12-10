@@ -89,7 +89,7 @@ func TCPdumpPlotter(settings Settings) {
 		var previousStream = 0
 		records, _ := csv.NewReader(bytes.NewReader(fileOtp)).ReadAll()
 
-		pdfToSave := vgpdf.New(vg.Points(1500), vg.Points(1000))
+		pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
 		w, err := os.Create(LogPath + strconv.Itoa(i) + "-tcpPlot.pdf")
 		if err != nil {
 			panic(err)
@@ -142,11 +142,65 @@ func TCPdumpPlotter(settings Settings) {
 		if _, err := pdfToSave.WriteTo(w); err != nil {
 			panic(err)
 		}
-
 		w.Close()
-
-		/*if err := p.Save(1500, 1000, LogPath+strconv.Itoa(i)+"-tcpPlot.pdf"); err != nil {
-			panic(err)
-		}*/
 	}
+}
+
+func RttPlotter(settings Settings) {
+	fmt.Println("Plotting E2E RTT")
+	pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
+	w, err := os.Create(LogPath + "e2eLatency.pdf")
+	if err != nil {
+		panic(err)
+	}
+
+	for epIndex, addr := range settings.Endpoints {
+		for interIndex, inter := range settings.Intervals {
+			for sizeIndex, size := range settings.MsgSizes {
+
+				var values plotter.XYs
+				var firstTs float64
+				for run := 1; run <= settings.Runs; run++ {
+					file, err := os.Open(LogPath +
+						strconv.Itoa(run) + "-" + addr.Destination + ".i" + strconv.Itoa(inter) + ".x" + strconv.Itoa(size) + ".csv")
+					if err == nil {
+						records, _ := csv.NewReader(file).ReadAll()
+						for i, row := range records {
+							if i != 0 {
+								parsed, fail := strconv.ParseFloat(row[2], 64)
+								if fail != nil {
+									continue
+								}
+								timeInter, fail := strconv.ParseFloat(row[0], 64)
+								if fail != nil {
+									continue
+								}
+								if run == 1 && i == 1 {
+									firstTs = timeInter
+								}
+								values = append(values, plotter.XY{X: (timeInter - firstTs -
+									float64((run-1)*settings.RunsInterval*60000000000)) / 1000000000, Y: parsed})
+							}
+						}
+					}
+				}
+				if (epIndex + interIndex + sizeIndex) != 0 {
+					pdfToSave.NextPage()
+				}
+				p, err := plot.New()
+				errMgmt(err)
+				p.X.Label.Text = "Time (s)"
+				p.Y.Label.Text = "E2E RTT (ms)"
+				p.Y.Tick.Marker = hplot.Ticks{N: 15}
+				p.X.Tick.Marker = hplot.Ticks{N: 15}
+				p.Title.Text = "E2E Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
+				err = plotutil.AddLines(p, "RTT", values)
+				p.Draw(draw.New(pdfToSave))
+			}
+		}
+	}
+	if _, err := pdfToSave.WriteTo(w); err != nil {
+		panic(err)
+	}
+	w.Close()
 }
