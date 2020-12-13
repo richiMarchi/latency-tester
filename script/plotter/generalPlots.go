@@ -126,6 +126,7 @@ func TCPdumpPlotter(settings Settings) {
 					for j, inter := range settings.Intervals {
 						for k, size := range settings.MsgSizes {
 							if y+j+k == previousStream {
+								// TODO: fix, not working
 								p.Title.Text = "TCP ACK Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
 							}
 						}
@@ -178,6 +179,7 @@ func RttPlotter(settings Settings) {
 								if run == 1 && i == 1 {
 									firstTs = timeInter
 								}
+								// TODO: fix this, wrong assumption, it should take time between lastOfRun and first of next one
 								values = append(values, plotter.XY{X: (timeInter - firstTs -
 									float64((run-1)*settings.RunsInterval*60000000000)) / 1000000000, Y: parsed})
 							}
