@@ -12,6 +12,7 @@ import (
 	"gonum.org/v1/plot/vg"
 	"gonum.org/v1/plot/vg/draw"
 	"gonum.org/v1/plot/vg/vgpdf"
+	"log"
 	"os"
 	"os/exec"
 	"sort"
@@ -160,12 +161,14 @@ func RttPlotter(settings Settings) {
 			for sizeIndex, size := range settings.MsgSizes {
 
 				var values plotter.XYs
-				var firstTs float64
+				var absoluteFirst float64
+				var lastOfRun float64
 				for run := 1; run <= settings.Runs; run++ {
 					file, err := os.Open(LogPath +
 						strconv.Itoa(run) + "-" + addr.Destination + ".i" + strconv.Itoa(inter) + ".x" + strconv.Itoa(size) + ".csv")
 					if err == nil {
 						records, _ := csv.NewReader(file).ReadAll()
+						var runGap float64
 						for i, row := range records {
 							if i != 0 {
 								parsed, fail := strconv.ParseFloat(row[2], 64)
@@ -176,12 +179,18 @@ func RttPlotter(settings Settings) {
 								if fail != nil {
 									continue
 								}
-								if run == 1 && i == 1 {
-									firstTs = timeInter
+								if i == 1 {
+									if run == 1 {
+										absoluteFirst = timeInter
+										lastOfRun = timeInter
+									}
+									runGap = timeInter - lastOfRun
+									log.Println(runGap)
 								}
-								// TODO: fix this, wrong assumption, it should take time between lastOfRun and first of next one
-								values = append(values, plotter.XY{X: (timeInter - firstTs -
-									float64((run-1)*settings.RunsInterval*60000000000)) / 1000000000, Y: parsed})
+								values = append(values, plotter.XY{X: (timeInter - absoluteFirst - runGap) / 1000000000, Y: parsed})
+								if i == len(records)-1 {
+									lastOfRun = timeInter - runGap
+								}
 							}
 						}
 					}

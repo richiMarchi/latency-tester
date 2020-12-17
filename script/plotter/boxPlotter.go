@@ -163,11 +163,11 @@ func intXepBoxPlot(ep struct {
 	w := vg.Points(100)
 	var position float64 = 0
 	for _, k := range keys {
-		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
-		errMgmt(err)
 		sort.Float64s(valuesMap[k])
 		toRemove := len(valuesMap[k]) / 100
 		valuesMap[k] = valuesMap[k][toRemove*3 : len(valuesMap[k])-toRemove*3]
+		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
+		errMgmt(err)
 		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
 		mins = append(mins, boxplot.AdjLow)
 		maxes = append(maxes, boxplot.AdjHigh)
