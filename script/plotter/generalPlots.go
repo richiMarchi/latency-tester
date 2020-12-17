@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/csv"
 	"fmt"
 	"go-hep.org/x/hep/hplot"
@@ -12,9 +11,7 @@ import (
 	"gonum.org/v1/plot/vg"
 	"gonum.org/v1/plot/vg/draw"
 	"gonum.org/v1/plot/vg/vgpdf"
-	"log"
 	"os"
-	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
@@ -59,7 +56,7 @@ func PingPlotter(destination string) {
 		return values[i].Y < values[j].Y
 	})
 	toRemove := len(values) / 100
-	values = values[:len(values)-toRemove]
+	values = values[:len(values)-toRemove*3]
 	sort.Slice(values, func(i, j int) bool {
 		return values[i].X < values[j].X
 	})
@@ -67,84 +64,6 @@ func PingPlotter(destination string) {
 
 	if err := p.Save(1500, 1000, LogPath+"pingPlot.pdf"); err != nil {
 		panic(err)
-	}
-}
-
-func TCPdumpPlotter(settings Settings) {
-	for i := 1; i <= settings.Runs; i++ {
-		fmt.Println("Plotting TCP RTT run: " + strconv.Itoa(i))
-
-		fileOtp, err := exec.Command("tshark",
-			"-r", LogPath+strconv.Itoa(i)+"-tcpdump_report.pcap",
-			"-Y", "tcp.analysis.ack_rtt and ip.dst==172.0.0.0/8",
-			"-e", "frame.time_epoch",
-			"-e", "tcp.analysis.ack_rtt",
-			"-e", "tcp.stream",
-			"-T", "fields",
-			"-E", "separator=,",
-			"-E", "quote=d").Output()
-		errMgmt(err)
-
-		var values plotter.XYs
-		var firstTs float64
-		var previousStream = 0
-		records, _ := csv.NewReader(bytes.NewReader(fileOtp)).ReadAll()
-
-		pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
-		w, err := os.Create(LogPath + strconv.Itoa(i) + "-tcpPlot.pdf")
-		if err != nil {
-			panic(err)
-		}
-
-		for index, row := range records {
-			ts, fail := strconv.ParseFloat(row[0], 64)
-			if fail != nil {
-				continue
-			}
-			rtt, fail := strconv.ParseFloat(row[1], 64)
-			if fail != nil {
-				continue
-			}
-			if len(values) == 0 {
-				firstTs = ts
-			}
-			streamId, _ := strconv.Atoi(row[2])
-			if previousStream != streamId || index == len(records)-1 {
-				if previousStream != 0 {
-					pdfToSave.NextPage()
-				}
-				// If it is the last iteration, add the last record before saving to pdf
-				if index == len(records)-1 {
-					values = append(values, plotter.XY{X: ts - firstTs, Y: rtt * 1000})
-				}
-				p, err := plot.New()
-				errMgmt(err)
-				p.X.Label.Text = "Time (s)"
-				p.Y.Label.Text = "TCP RTT (ms)"
-				p.Y.Tick.Marker = hplot.Ticks{N: 15}
-				p.X.Tick.Marker = hplot.Ticks{N: 15}
-				for y, addr := range settings.Endpoints {
-					for j, inter := range settings.Intervals {
-						for k, size := range settings.MsgSizes {
-							if y+j+k == previousStream {
-								// TODO: fix, not working
-								p.Title.Text = "TCP ACK Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
-							}
-						}
-					}
-				}
-				err = plotutil.AddLines(p, "ACK RTT", values)
-				p.Draw(draw.New(pdfToSave))
-				values = values[:0]
-				previousStream = streamId
-			}
-			values = append(values, plotter.XY{X: ts - firstTs, Y: rtt * 1000})
-		}
-
-		if _, err := pdfToSave.WriteTo(w); err != nil {
-			panic(err)
-		}
-		w.Close()
 	}
 }
 
@@ -185,7 +104,6 @@ func RttPlotter(settings Settings) {
 										lastOfRun = timeInter
 									}
 									runGap = timeInter - lastOfRun
-									log.Println(runGap)
 								}
 								values = append(values, plotter.XY{X: (timeInter - absoluteFirst - runGap) / 1000000000, Y: parsed})
 								if i == len(records)-1 {
@@ -205,6 +123,14 @@ func RttPlotter(settings Settings) {
 				p.Y.Tick.Marker = hplot.Ticks{N: 15}
 				p.X.Tick.Marker = hplot.Ticks{N: 15}
 				p.Title.Text = "E2E Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
+				sort.Slice(values, func(i, j int) bool {
+					return values[i].Y < values[j].Y
+				})
+				toRemove := len(values) / 100
+				values = values[:len(values)-toRemove*3]
+				sort.Slice(values, func(i, j int) bool {
+					return values[i].X < values[j].X
+				})
 				err = plotutil.AddLines(p, "RTT", values)
 				p.Draw(draw.New(pdfToSave))
 			}

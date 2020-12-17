@@ -25,7 +25,7 @@ type Settings struct {
 	TlsEnabled   string `yaml:"tls_enabled"`
 }
 
-const LogPath = "/tmp/"
+const LogPath = "/execdir/"
 
 func main() {
 
@@ -50,6 +50,5 @@ func main() {
 	IntervalsCDF(settings)
 	EndpointsCDF(settings)
 	PingPlotter(settings.PingIp)
-	TCPdumpPlotter(settings)
 	RttPlotter(settings)
 }

@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-const LogPath = "/tmp/"
+const LogPath = "/execdir/"
 
 var reps = flag.Uint64("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "log", "file to store latency numbers")
