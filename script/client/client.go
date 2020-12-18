@@ -17,15 +17,13 @@ var requestBytes = flag.Uint64("requestPayload", 64, "bytes of the payload")
 var responseBytes = flag.Uint64("responsePayload", 64, "bytes of the response payload")
 var interval = flag.Uint64("interval", 1000, "send interval time (ms)")
 var https = flag.Bool("tls", false, "true if TLS enabled")
-var traceroute = flag.Bool("traceroute", false, "true if traceroute requested")
+var tracerouteIp = flag.String("traceroute", "", "traceroute ip if requested")
 var sockOpt = flag.Bool("tcpStats", false, "true if TCP Stats requested")
 var address string
-var pingIp string
 
 func main() {
 	flag.Parse()
 	address = flag.Arg(0)
-	pingIp = flag.Arg(1)
 	log.SetFlags(0)
 	if *requestBytes < 62 || *responseBytes < 62 {
 		log.Fatal("Minimum payload size: 62")
@@ -34,10 +32,6 @@ func main() {
 	if address == "" {
 		log.Fatal("Server address required")
 	}
-
-	/*if pingIp == "" {
-		log.Fatal("Address to ping required")
-	}*/
 
 	printLogs()
 
@@ -56,21 +50,15 @@ func main() {
 	}
 	toolRtt.WriteString("#client-send-timestamp,server-timestamp,e2e-rtt\n")
 	defer toolRtt.Close()
-	/*osRtt, osRttFileErr := os.Create(LogPath + "os-rtt_" + *logFile + ".csv")
-	if osRttFileErr != nil {
-		log.Fatalf("failed creating file: %s", osRttFileErr)
-	}
-	osRtt.WriteString("#timestamp,os-rtt\n")
-	defer osRtt.Close()*/
 
-	if *traceroute {
+	if *tracerouteIp != "" {
 		tracerouteFile, tracerouteFileErr := os.Create(LogPath + "traceroute_" + *logFile)
 		if tracerouteFileErr != nil {
 			log.Fatalf("failed creating file: %s", tracerouteFileErr)
 		}
 
-		log.Println("Starting traceroute to", pingIp+"...")
-		customTraceroute(pingIp, tracerouteFile)
+		log.Println("Starting traceroute to", *tracerouteIp+"...")
+		customTraceroute(*tracerouteIp, tracerouteFile)
 		tracerouteFile.Close()
 		log.Println("Traceroute completed!")
 		log.Println()
@@ -78,7 +66,6 @@ func main() {
 
 	// Create synchronization channels
 	doneRead := make(chan struct{})
-	/*donePing := make(chan struct{})*/
 	reset := make(chan *websocket.Conn, 2)
 
 	// Parallel read dispatcher
@@ -88,9 +75,7 @@ func main() {
 	ssReading := true
 	var msgId uint64 = 0
 
-	// Parallel os ping and, if explicitly requested, tcp stats handlers
-	/*wg.Add(1)
-	go customPing(pingIp, &wg, donePing, osRtt)*/
+	// If explicitly requested tcp stats handlers
 	if *sockOpt {
 		tcpStats, tcpStatsFileErr := os.Create(LogPath + "tcp-stats_" + *logFile + ".csv")
 		if tcpStatsFileErr != nil {
@@ -109,7 +94,6 @@ func main() {
 
 	// Stop all go routines
 	ssReading = false
-	/*close(donePing)*/
 
 	// Wait for the go routines to complete their job
 	<-doneRead

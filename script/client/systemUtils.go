@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 func customTraceroute(
@@ -19,27 +18,6 @@ func customTraceroute(
 	outputFile *os.File) {
 	output, _ := exec.Command("traceroute", tracerouteIp).Output()
 	outputFile.WriteString(string(output))
-}
-
-func customPing(
-	pingIp string,
-	wGroup *sync.WaitGroup,
-	done chan struct{},
-	outputFile *os.File) {
-	defer wGroup.Done()
-	for {
-		output, _ := exec.Command("ping", pingIp, "-c 1").Output()
-		rttMs := string(output)
-		if strings.Contains(rttMs, "time=") && strings.Contains(rttMs, " ms") {
-			floatMs := rttMs[strings.Index(rttMs, "time=")+5 : strings.Index(rttMs, " ms")]
-			outputFile.WriteString(strconv.FormatInt(getTimestamp().UnixNano(), 10) + "," + floatMs + "\n")
-		}
-		select {
-		case <-done:
-			return
-		case <-time.After(time.Duration(*interval) * time.Millisecond):
-		}
-	}
 }
 
 func getSocketStats(
