@@ -8,10 +8,7 @@ import (
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
-	"io/ioutil"
-	"log"
 	"math"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -32,13 +29,7 @@ func SizesCDF(settings Settings) {
 		}
 	}
 
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			plots[i][j].X.Min = min
-			plots[i][j].X.Max = max
-		}
-	}
-
+	adjustMinMaxX(plots, rows, cols, min, max)
 	commonPlotting(plots, rows, cols, cols*500, "sizesCDF")
 }
 
@@ -51,20 +42,7 @@ func intXepCDF(ep struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir(LogPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var openFiles []*os.File
-	for _, f := range files {
-		if strings.Contains(f.Name(), "-"+ep.Destination+".i"+strconv.Itoa(si)+".x") {
-			file, err := os.Open(LogPath + f.Name())
-			if err != nil {
-				log.Fatal(err)
-			}
-			openFiles = append(openFiles, file)
-		}
-	}
+	openFiles := openDesiredFiles("-" + ep.Destination + ".i" + strconv.Itoa(si) + ".x")
 
 	valuesMap := make(map[int]plotter.Values)
 
@@ -91,27 +69,7 @@ func intXepCDF(ep struct {
 	p.X.Tick.Marker = hplot.Ticks{N: 15}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
-	// Get map ordered keys
-	keys := make([]int, 0, len(valuesMap))
-	for k := range valuesMap {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-
-	var lines []interface{}
-	for _, k := range keys {
-		sort.Float64s(valuesMap[k])
-		toRemove := len(valuesMap[k]) / 100
-		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove*2]
-		var toAdd plotter.XYs
-		for i, y := range yValsCDF(len(valuesMap[k])) {
-			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
-		}
-		lines = append(lines, strconv.Itoa(k))
-		lines = append(lines, toAdd)
-	}
-	err = plotutil.AddLines(p, lines...)
-	errMgmt(err)
+	generateCDFPlot(p, &valuesMap)
 
 	return p
 }
@@ -131,13 +89,7 @@ func IntervalsCDF(settings Settings) {
 		}
 	}
 
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			plots[i][j].X.Min = min
-			plots[i][j].X.Max = max
-		}
-	}
-
+	adjustMinMaxX(plots, rows, cols, min, max)
 	commonPlotting(plots, rows, cols, cols*500, "intervalsCDF")
 }
 
@@ -150,20 +102,7 @@ func sizeXepCDF(ep struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir(LogPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var openFiles []*os.File
-	for _, f := range files {
-		if strings.Contains(f.Name(), "-"+ep.Destination+".i") && strings.Contains(f.Name(), ".x"+strconv.Itoa(msgSize)+".csv") {
-			file, err := os.Open(LogPath + f.Name())
-			if err != nil {
-				log.Fatal(err)
-			}
-			openFiles = append(openFiles, file)
-		}
-	}
+	openFiles := openDesiredFiles("-"+ep.Destination+".i", ".x"+strconv.Itoa(msgSize)+".csv")
 
 	valuesMap := make(map[int]plotter.Values)
 
@@ -190,27 +129,7 @@ func sizeXepCDF(ep struct {
 	p.X.Tick.Marker = hplot.Ticks{N: 15}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
-	// Get map ordered keys
-	keys := make([]int, 0, len(valuesMap))
-	for k := range valuesMap {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-
-	var lines []interface{}
-	for _, k := range keys {
-		sort.Float64s(valuesMap[k])
-		toRemove := len(valuesMap[k]) / 100
-		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove*2]
-		var toAdd plotter.XYs
-		for i, y := range yValsCDF(len(valuesMap[k])) {
-			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
-		}
-		lines = append(lines, strconv.Itoa(k))
-		lines = append(lines, toAdd)
-	}
-	err = plotutil.AddLines(p, lines...)
-	errMgmt(err)
+	generateCDFPlot(p, &valuesMap)
 
 	return p
 }
@@ -230,13 +149,7 @@ func EndpointsCDF(settings Settings) {
 		}
 	}
 
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			plots[i][j].X.Min = min
-			plots[i][j].X.Max = max
-		}
-	}
-
+	adjustMinMaxX(plots, rows, cols, min, max)
 	commonPlotting(plots, rows, cols, cols*500, "endpointsCDF")
 }
 
@@ -249,20 +162,7 @@ func intXsizeCDF(msgSize int, si int, eps []struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir(LogPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var openFiles []*os.File
-	for _, f := range files {
-		if strings.Contains(f.Name(), ".i"+strconv.Itoa(si)+".x"+strconv.Itoa(msgSize)+".csv") {
-			file, err := os.Open(LogPath + f.Name())
-			if err != nil {
-				log.Fatal(err)
-			}
-			openFiles = append(openFiles, file)
-		}
-	}
+	openFiles := openDesiredFiles(".i" + strconv.Itoa(si) + ".x" + strconv.Itoa(msgSize) + ".csv")
 
 	valuesMap := make(map[string]plotter.Values)
 

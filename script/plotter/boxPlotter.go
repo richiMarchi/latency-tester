@@ -8,10 +8,7 @@ import (
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
-	"io/ioutil"
-	"log"
 	"math"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,13 +32,7 @@ func SizesBoxPlot(settings Settings) {
 		}
 	}
 
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			plots[i][j].Y.Min = min - 1
-			plots[i][j].Y.Max = max + 3
-		}
-	}
-
+	adjustMinMaxY(plots, rows, cols, min-1, max+3)
 	commonPlotting(plots, rows, cols, 100+cols*elems*200, "sizesBoxPlot")
 }
 
@@ -63,13 +54,7 @@ func IntervalsBoxPlot(settings Settings) {
 		}
 	}
 
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			plots[i][j].Y.Min = min - 1
-			plots[i][j].Y.Max = max + 3
-		}
-	}
-
+	adjustMinMaxY(plots, rows, cols, min-1, max+3)
 	commonPlotting(plots, rows, cols, 100+cols*elems*200, "intervalsBoxPlot")
 }
 
@@ -91,13 +76,7 @@ func EndpointsBoxPlot(settings Settings) {
 		}
 	}
 
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			plots[i][j].Y.Min = min - 1
-			plots[i][j].Y.Max = max + 3
-		}
-	}
-
+	adjustMinMaxY(plots, rows, cols, min-1, max+3)
 	commonPlotting(plots, rows, cols, 100+cols*elems*200, "endpointsBoxPlot")
 }
 
@@ -110,20 +89,7 @@ func intXepBoxPlot(ep struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir(LogPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var openFiles []*os.File
-	for _, f := range files {
-		if strings.Contains(f.Name(), "-"+ep.Destination+".i"+strconv.Itoa(si)+".x") {
-			file, err := os.Open(LogPath + f.Name())
-			if err != nil {
-				log.Fatal(err)
-			}
-			openFiles = append(openFiles, file)
-		}
-	}
+	openFiles := openDesiredFiles("-" + ep.Destination + ".i" + strconv.Itoa(si) + ".x")
 
 	valuesMap := make(map[int]plotter.Values)
 
@@ -150,33 +116,7 @@ func intXepBoxPlot(ep struct {
 	p.Y.Tick.Marker = hplot.Ticks{N: 15}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
-	// Get map ordered keys
-	keys := make([]int, 0, len(valuesMap))
-	for k := range valuesMap {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-
-	var nominals []string
-	var mins []float64
-	var maxes []float64
-	w := vg.Points(100)
-	var position float64 = 0
-	for _, k := range keys {
-		sort.Float64s(valuesMap[k])
-		toRemove := len(valuesMap[k]) / 100
-		valuesMap[k] = valuesMap[k][toRemove*3 : len(valuesMap[k])-toRemove*3]
-		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
-		errMgmt(err)
-		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
-		mins = append(mins, boxplot.AdjLow)
-		maxes = append(maxes, boxplot.AdjHigh)
-		position += 1
-		p.Add(boxplot)
-	}
-	p.NominalX(nominals...)
-
-	return p, floats.Min(mins), floats.Max(maxes)
+	return generateBoxPlotAndLimits(p, &valuesMap)
 }
 
 func sizeXepBoxPlot(ep struct {
@@ -188,20 +128,7 @@ func sizeXepBoxPlot(ep struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir(LogPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var openFiles []*os.File
-	for _, f := range files {
-		if strings.Contains(f.Name(), "-"+ep.Destination+".i") && strings.Contains(f.Name(), ".x"+strconv.Itoa(msgSize)+".csv") {
-			file, err := os.Open(LogPath + f.Name())
-			if err != nil {
-				log.Fatal(err)
-			}
-			openFiles = append(openFiles, file)
-		}
-	}
+	openFiles := openDesiredFiles("-"+ep.Destination+".i", ".x"+strconv.Itoa(msgSize)+".csv")
 
 	valuesMap := make(map[int]plotter.Values)
 
@@ -228,33 +155,7 @@ func sizeXepBoxPlot(ep struct {
 	p.Y.Tick.Marker = hplot.Ticks{N: 15}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
-	// Get map ordered keys
-	keys := make([]int, 0, len(valuesMap))
-	for k := range valuesMap {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-
-	var nominals []string
-	var mins []float64
-	var maxes []float64
-	w := vg.Points(100)
-	var position float64 = 0
-	for _, k := range keys {
-		sort.Float64s(valuesMap[k])
-		toRemove := len(valuesMap[k]) / 100
-		valuesMap[k] = valuesMap[k][toRemove*3 : len(valuesMap[k])-toRemove*3]
-		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
-		errMgmt(err)
-		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
-		mins = append(mins, boxplot.AdjLow)
-		maxes = append(maxes, boxplot.AdjHigh)
-		position += 1
-		p.Add(boxplot)
-	}
-	p.NominalX(nominals...)
-
-	return p, floats.Min(mins), floats.Max(maxes)
+	return generateBoxPlotAndLimits(p, &valuesMap)
 }
 
 func intXsizeBoxPlot(msgSize int, si int, eps []struct {
@@ -266,20 +167,7 @@ func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 	errMgmt(err)
 
 	// Open the desired files
-	files, err := ioutil.ReadDir(LogPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var openFiles []*os.File
-	for _, f := range files {
-		if strings.Contains(f.Name(), ".i"+strconv.Itoa(si)+".x"+strconv.Itoa(msgSize)+".csv") {
-			file, err := os.Open(LogPath + f.Name())
-			if err != nil {
-				log.Fatal(err)
-			}
-			openFiles = append(openFiles, file)
-		}
-	}
+	openFiles := openDesiredFiles(".i" + strconv.Itoa(si) + ".x" + strconv.Itoa(msgSize) + ".csv")
 
 	valuesMap := make(map[string]plotter.Values)
 
