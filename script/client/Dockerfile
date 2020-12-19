@@ -1,19 +1,12 @@
-FROM golang
-
-RUN apt-get update && apt-get install -y traceroute tcpdump iperf3
-
+FROM golang as builder
 WORKDIR /build
-
-# Copy and download dependency using go mod
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
-
-# Copy the code into the container
 COPY . .
-
-# Build the application
 RUN go build -o client .
 
-# Run the executable
+FROM ubuntu
+RUN apt-get update && apt-get install -y traceroute tcpdump iperf3
+COPY --from=builder /build/client .
 ENTRYPOINT ["./client"]
