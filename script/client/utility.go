@@ -76,10 +76,9 @@ func printLogs() {
 	log.Println("Response Bytes:\t\t", *responseBytes)
 	log.Println("Send Interval:\t\t", *interval)
 	log.Println("TLS enabled:\t\t", *https)
-	log.Println("Traceroute enabled:\t", *traceroute)
+	log.Println("Traceroute IP:\t", *tracerouteIp)
 	log.Println("TCP Stats enabled:\t", *sockOpt)
 	log.Println("Address:\t\t", address)
-	log.Println("Ping and Traceroute IP:\t", pingIp)
 	log.Println()
 }
 

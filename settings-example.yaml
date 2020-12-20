@@ -1,0 +1,38 @@
+# How many times to iterate
+runs: 24
+# Time interval between the start of two different runs (in minutes)
+runs_interval: 60
+# How much time each client execution should last (in seconds)
+runs_step_duration: 30
+# Iperf IP
+iperf_ip: "130.192.31.240"
+# Iperf Port
+iperf_port: "80"
+# Ping IP
+ping_ip: "130.192.31.254"
+# Interval between ping executions (in seconds)
+ping_interval: 30
+# List of endpoints to test E2E latency, defined by its name/description and its address
+endpoints:
+- description: "LB-4"
+  destination: "130.192.31.242:8080"
+- description: "LB-7"
+  destination: "latency-tester.crownlabs.polito.it"
+# List of intervals between the send of two messages to test E2E latency
+intervals:
+- 10
+- 25
+- 50
+- 100
+- 250
+- 500
+# List of request message sizes to test E2E latency
+msg_sizes:
+- 1024
+- 10240
+- 102400
+- 1024000
+# Response message size
+response_size: 1024
+# True if TLS enabled
+tls_enabled: "true"
