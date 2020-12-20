@@ -6,7 +6,6 @@ The tool can run with different parameters set as command line arguments.
 
 Collected metrics (.csv file as output):
 * E2E application delay with Websocket
-* OS RTT with ping
 * TCP main socket parameters
 
 If requested, the result of traceroute can be retrieved too.
@@ -31,7 +30,7 @@ docker run -p 8080:8080 [--name <container-name>] richimarchi/latency-tester_ser
 
 ```
 docker pull richimarchi/latency-tester_client
-docker run -p 8080:8080 [--name <container-name>] -v <local-log-folder>:/tmp richimarchi/latency-tester_client:latest [-reps=<repetitions>] [-requestPayload=<bytes>] [-responsePayload=<bytes>] [-interval=<ms>] [-tcpStats=<enabled>] [-tls=<enabled>] [-traceroute=<enabled>] [-log=<log-file>] <address> <ping-ip>
+docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/latency-tester_client:latest [-reps=<repetitions>] [-requestPayload=<bytes>] [-responsePayload=<bytes>] [-interval=<ms>] [-tcpStats=<enabled>] [-tls=<enabled>] [-traceroute=<address>] [-log=<log-file>] <address>
 ```
 
 #### Required input parameters
@@ -39,7 +38,6 @@ docker run -p 8080:8080 [--name <container-name>] -v <local-log-folder>:/tmp ric
 |Param|Description|
 |---|---|
 |`<address>`|Address of the running server|
-|`<ping-ip>`|Address of the node to ping or traceroute|
 
 #### Client flags:
 
@@ -51,7 +49,7 @@ docker run -p 8080:8080 [--name <container-name>] -v <local-log-folder>:/tmp ric
 |`-interval`|Requests send interval (in milliseconds)|`1000`|
 |`-tcpStats`|`true` if TCP Stats requested (short execution time is suggested, as it consumes a lot of CPU and RAM)|`false`|
 |`-tls`|`true` if TLS requested|`false`|
-|`-traceroute`|`true` if traceroute is requested to run|`false`|
+|`-traceroute`|If present, address traceroute should run towards||
 |`-log`|Define the name of the file|`log`|
 
 ## How to deploy the server into a Kubernetes cluster
@@ -68,6 +66,14 @@ kubectl apply -f customServerDeployment.yaml
 
 
 ## Latency Tester Automated Script
+
+### Script Run
+
+```
+docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/lat-test_scripted-run:automated <settings-yaml-file>
+```
+
+*If you want to disable TCP CUBIC window shrinking for long send intervals, add `--sysctl net.ipv4.tcp_slow_start_after_idle=0` flag*
 
 ### Script Workflow
 
