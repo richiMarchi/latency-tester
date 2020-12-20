@@ -67,6 +67,10 @@ kubectl apply -f customServerDeployment.yaml
 
 ## Latency Tester Automated Script
 
+### Script Workflow
+
+![alt text](workflow.png "Workflow")
+
 ### Script Run
 
 ```
@@ -75,11 +79,13 @@ docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/
 
 *If you want to disable TCP CUBIC window shrinking for long send intervals, add `--sysctl net.ipv4.tcp_slow_start_after_idle=0` flag*
 
-### Script Workflow
+#### Required input parameters
 
-![alt text](workflow.png "Workflow")
+|Param|Description|
+|---|---|
+|`<settings-yaml-file>`|Yaml file that defines all the parameters needed for the script to run (example of the file in the section below)|
 
-### Input Settings
+### Input Parameters
 
 Here is an example of the input file:
 
