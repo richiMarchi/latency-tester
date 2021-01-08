@@ -12,9 +12,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
-func typedBoxPlots(settings Settings, objectType int) {
+func typedBoxPlots(settings Settings, objectType int, wg *sync.WaitGroup) {
 	rows, cols, elems := getLoopElems(settings, objectType)
 	min := math.Inf(1)
 	max := math.Inf(-1)
@@ -46,9 +47,12 @@ func typedBoxPlots(settings Settings, objectType int) {
 	}
 
 	adjustMinMaxY(plots, rows, cols, min-1, max+3)
-	commonPlotting(plots, rows, cols, 100+cols*elems*200, settings.ExecDir+filename)
+	commonPlotting(plots, rows, cols, 100+cols*elems*200, settings.ExecDir+PlotDirName+filename)
+
+	wg.Done()
 }
 
+// Return a boxplot of the e2e rtt of the sizes given the interval and the endpoint
 func intXepBoxPlot(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
@@ -88,6 +92,7 @@ func intXepBoxPlot(ep struct {
 	return generateBoxPlotAndLimits(p, &valuesMap)
 }
 
+// Return a boxplot of the e2e rtt of the intervals given the size and the endpoint
 func sizeXepBoxPlot(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
@@ -127,6 +132,7 @@ func sizeXepBoxPlot(ep struct {
 	return generateBoxPlotAndLimits(p, &valuesMap)
 }
 
+// Return a boxplot of the e2e rtt of the endpoints given the interval and the size
 func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
@@ -159,7 +165,7 @@ func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 
 	p.X.Label.Text = "Endpoint"
 	p.Y.Label.Text = "E2E RTT (ms)"
-	p.Y.Tick.Marker = hplot.Ticks{N: 15}
+	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "KiB"
 
 	// Get map ordered keys

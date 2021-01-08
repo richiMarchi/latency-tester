@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sync"
+	"syscall"
 )
 
 type Settings struct {
@@ -33,6 +35,7 @@ const (
 )
 
 const AxisTicks = 15
+const PlotDirName = "/plots/"
 
 func main() {
 
@@ -50,12 +53,23 @@ func main() {
 		settings.IperfPort = "5201"
 	}
 
-	typedBoxPlots(settings, SIZES)
-	typedBoxPlots(settings, INTERVALS)
-	typedBoxPlots(settings, ENDPOINTS)
-	typedCDFs(settings, SIZES)
-	typedCDFs(settings, INTERVALS)
-	typedCDFs(settings, ENDPOINTS)
-	PingPlotter(settings)
-	RttPlotter(settings)
+	// Create the file in order that it can be totally handled by the host machine
+	syscall.Umask(0)
+	_ = os.Mkdir(settings.ExecDir+PlotDirName, os.ModePerm)
+
+	var wg sync.WaitGroup
+
+	wg.Add(8 + settings.Runs)
+	for run := 1; run <= settings.Runs; run++ {
+		go TcpdumpPlotter(settings, run, &wg)
+	}
+	go typedBoxPlots(settings, SIZES, &wg)
+	go typedBoxPlots(settings, INTERVALS, &wg)
+	go typedBoxPlots(settings, ENDPOINTS, &wg)
+	go typedCDFs(settings, SIZES, &wg)
+	go typedCDFs(settings, INTERVALS, &wg)
+	go typedCDFs(settings, ENDPOINTS, &wg)
+	go PingPlotter(settings, &wg)
+	go RttPlotter(settings, &wg)
+	wg.Wait()
 }

@@ -190,6 +190,7 @@ func generateCDFPlot(p *plot.Plot, valuesMap *map[int]plotter.Values) {
 	errMgmt(err)
 }
 
+// Return the lengths of the elements depending on the object type
 func getLoopElems(settings Settings, objectType int) (int, int, int) {
 	switch objectType {
 	case ENDPOINTS:
@@ -201,4 +202,29 @@ func getLoopElems(settings Settings, objectType int) (int, int, int) {
 	default:
 		panic("Wrong objectType in loop elements: only values 0,1 and 2 are allowed")
 	}
+}
+
+// Return the title to assign to the plot depending on the stream
+func getTcpPlotTitle(settings Settings, streamCounter int) string {
+	tracker := 0
+	for _, addr := range settings.Endpoints {
+		for _, inter := range settings.Intervals {
+			for _, size := range settings.MsgSizes {
+				if tracker == streamCounter {
+					return "TCP ACK Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
+				}
+				tracker += 1
+				if tracker > streamCounter {
+					break
+				}
+			}
+			if tracker > streamCounter {
+				break
+			}
+		}
+		if tracker > streamCounter {
+			break
+		}
+	}
+	panic("Cannot assign the title to the plot, buggy code!")
 }

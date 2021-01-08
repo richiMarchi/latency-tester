@@ -12,9 +12,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
-func typedCDFs(settings Settings, objectType int) {
+func typedCDFs(settings Settings, objectType int, wg *sync.WaitGroup) {
 	rows, cols, _ := getLoopElems(settings, objectType)
 	min := math.Inf(1)
 	max := math.Inf(-1)
@@ -42,9 +43,12 @@ func typedCDFs(settings Settings, objectType int) {
 	}
 
 	adjustMinMaxX(plots, rows, cols, min, max)
-	commonPlotting(plots, rows, cols, cols*500, settings.ExecDir+filename)
+	commonPlotting(plots, rows, cols, cols*500, settings.ExecDir+PlotDirName+filename)
+
+	wg.Done()
 }
 
+// Return a cdf of the e2e rtt of the sizes given the interval and the endpoint
 func intXepCDF(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
@@ -86,6 +90,7 @@ func intXepCDF(ep struct {
 	return p
 }
 
+// Return a cdf of the e2e rtt of the intervals given the size and the endpoint
 func sizeXepCDF(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
@@ -119,7 +124,7 @@ func sizeXepCDF(ep struct {
 
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
-	p.X.Tick.Marker = hplot.Ticks{N: 15}
+	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
 	generateCDFPlot(p, &valuesMap)
@@ -127,6 +132,7 @@ func sizeXepCDF(ep struct {
 	return p
 }
 
+// Return a cdf of the e2e rtt of the endpoints given the interval and the size
 func intXsizeCDF(msgSize int, si int, eps []struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
@@ -159,7 +165,7 @@ func intXsizeCDF(msgSize int, si int, eps []struct {
 
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
-	p.X.Tick.Marker = hplot.Ticks{N: 15}
+	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "KiB"
 
 	// Get map ordered keys

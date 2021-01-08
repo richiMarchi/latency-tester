@@ -15,9 +15,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
-func PingPlotter(settings Settings) {
+func PingPlotter(settings Settings, wg *sync.WaitGroup) {
 	fmt.Println("Plotting Ping")
 	p, err := plot.New()
 	errMgmt(err)
@@ -52,6 +53,7 @@ func PingPlotter(settings Settings) {
 			values = append(values, plotter.XY{X: timeInter - firstTs, Y: rttVal})
 		}
 	}
+	// Remove the last three percentiles
 	sort.Slice(values, func(i, j int) bool {
 		return values[i].Y < values[j].Y
 	})
@@ -62,15 +64,95 @@ func PingPlotter(settings Settings) {
 	})
 	err = plotutil.AddLines(p, "Ping RTT", values)
 
-	if err := p.Save(1500, 1000, settings.ExecDir+"pingPlot.pdf"); err != nil {
+	if err := p.Save(1500, 1000, settings.ExecDir+PlotDirName+"pingPlot.pdf"); err != nil {
 		panic(err)
 	}
+
+	wg.Done()
 }
 
-func RttPlotter(settings Settings) {
+func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
+	fmt.Println("Plotting TCP run #", run)
+
+	// Open the desired file
+	file, err := os.Open(settings.ExecDir + strconv.Itoa(run) + "-tcpdump_report.csv")
+	errMgmt(err)
+
+	var values plotter.XYs
+	var firstTs float64
+	var previousStream int
+	streamCounter := 0
+	// Read the file as CSV and remove the headers line
+	records, _ := csv.NewReader(file).ReadAll()
+	records = records[1:]
+
+	pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
+	w, err := os.Create(settings.ExecDir + PlotDirName + strconv.Itoa(run) + "-tcpPlot.pdf")
+	if err != nil {
+		panic(err)
+	}
+
+	for index, row := range records {
+		ts, fail := strconv.ParseFloat(row[0], 64)
+		if fail != nil {
+			continue
+		}
+		rtt, fail := strconv.ParseFloat(row[1], 64)
+		if fail != nil {
+			continue
+		}
+		streamId, _ := strconv.Atoi(row[2])
+		if len(values) == 0 {
+			firstTs = ts
+			previousStream = streamId
+		}
+		if previousStream != streamId || index == len(records)-1 {
+			if streamCounter != 0 {
+				pdfToSave.NextPage()
+			}
+			// If it is the last iteration, add the last record before saving to pdf
+			if index == len(records)-1 {
+				// Convert values to ms
+				values = append(values, plotter.XY{X: ts - firstTs, Y: rtt * 1000})
+			}
+			p, err := plot.New()
+			errMgmt(err)
+			p.X.Label.Text = "Time (s)"
+			p.Y.Label.Text = "TCP RTT (ms)"
+			p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
+			p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
+			p.Title.Text = getTcpPlotTitle(settings, streamCounter)
+			// Remove the last 3 percentiles
+			sort.Slice(values, func(i, j int) bool {
+				return values[i].Y < values[j].Y
+			})
+			toRemove := len(values) / 100
+			values = values[:len(values)-toRemove*3]
+			sort.Slice(values, func(i, j int) bool {
+				return values[i].X < values[j].X
+			})
+			err = plotutil.AddLines(p, "ACK RTT", values)
+			p.Draw(draw.New(pdfToSave))
+			values = values[:0]
+			streamCounter += 1
+			previousStream = streamId
+		}
+		// Convert values to ms
+		values = append(values, plotter.XY{X: ts - firstTs, Y: rtt * 1000})
+	}
+
+	if _, err := pdfToSave.WriteTo(w); err != nil {
+		panic(err)
+	}
+	w.Close()
+
+	wg.Done()
+}
+
+func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 	fmt.Println("Plotting E2E RTT")
 	pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
-	w, err := os.Create(settings.ExecDir + "e2eLatency.pdf")
+	w, err := os.Create(settings.ExecDir + PlotDirName + "e2eLatency.pdf")
 	if err != nil {
 		panic(err)
 	}
@@ -105,6 +187,7 @@ func RttPlotter(settings Settings) {
 									}
 									runGap = timeInter - lastOfRun
 								}
+								// Convert values to ms
 								values = append(values, plotter.XY{X: (timeInter - absoluteFirst - runGap) / 1000000000, Y: parsed})
 								if i == len(records)-1 {
 									lastOfRun = timeInter - runGap
@@ -123,6 +206,7 @@ func RttPlotter(settings Settings) {
 				p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 				p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 				p.Title.Text = "E2E Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
+				// Remove the last three percentiles
 				sort.Slice(values, func(i, j int) bool {
 					return values[i].Y < values[j].Y
 				})
@@ -140,4 +224,6 @@ func RttPlotter(settings Settings) {
 		panic(err)
 	}
 	w.Close()
+
+	wg.Done()
 }
