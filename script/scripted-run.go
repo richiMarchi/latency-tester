@@ -5,6 +5,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -67,7 +68,8 @@ func main() {
 		log.Println("Iperf complete!")
 		stopTcpdump := make(chan os.Signal, 1)
 		wg.Add(1)
-		go tcpDumper(i, &wg, stopTcpdump, settings.ExecDir)
+		localIp := getOutboundIP()
+		go tcpDumper(i, &wg, stopTcpdump, localIp, settings.ExecDir)
 		startTime := getTimestamp()
 		for _, addr := range settings.Endpoints {
 			for _, inter := range settings.Intervals {
@@ -137,14 +139,14 @@ func pingThread(wg *sync.WaitGroup, execdir, address string, interval int, c cha
 	wg.Done()
 }
 
-func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal, execdir string) {
+func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal, localIp, execdir string) {
 	tcpRtt, err := os.Create(execdir + strconv.Itoa(run) + "-tcpdump_report.csv")
 	errMgmt(err)
 	defer tcpRtt.Close()
-	tcpRtt.WriteString("#frame-timestamp,tcp-ack-rtt,tcp-stream\n")
+	tcpRtt.WriteString("#frame-timestamp,tcp-ack-rtt,tcp-stream-id\n")
 	tcpdumpCmd := exec.Command("tshark",
 		"-ni", "any",
-		"-Y", "tcp.analysis.ack_rtt and ip.dst==172.0.0.0/8",
+		"-Y", "tcp.analysis.ack_rtt and ip.dst=="+localIp,
 		"-e", "frame.time_epoch",
 		"-e", "tcp.analysis.ack_rtt",
 		"-e", "tcp.stream",
@@ -174,4 +176,16 @@ func errMgmt(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+// Get preferred outbound ip of this machine
+func getOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	return localAddr.IP.String()
 }
