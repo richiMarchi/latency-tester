@@ -23,9 +23,16 @@ type Settings struct {
 	MsgSizes     []int  `yaml:"msg_sizes"`     // in bytes
 	ResponseSize int    `yaml:"response_size"` // in bytes
 	TlsEnabled   string `yaml:"tls_enabled"`
+	ExecDir      string `yaml:"exec_dir"`
 }
 
-const LogPath = "/execdir/"
+const (
+	ENDPOINTS = iota
+	INTERVALS = iota
+	SIZES     = iota
+)
+
+const AxisTicks = 15
 
 func main() {
 
@@ -34,7 +41,7 @@ func main() {
 	}
 
 	// Settings parsing
-	file, err := ioutil.ReadFile(LogPath + os.Args[1])
+	file, err := ioutil.ReadFile(os.Args[1])
 	errMgmt(err)
 	var settings Settings
 	err = yaml.Unmarshal(file, &settings)
@@ -43,12 +50,12 @@ func main() {
 		settings.IperfPort = "5201"
 	}
 
-	SizesBoxPlot(settings)
-	IntervalsBoxPlot(settings)
-	EndpointsBoxPlot(settings)
-	SizesCDF(settings)
-	IntervalsCDF(settings)
-	EndpointsCDF(settings)
-	PingPlotter(settings.PingIp)
+	typedBoxPlots(settings, SIZES)
+	typedBoxPlots(settings, INTERVALS)
+	typedBoxPlots(settings, ENDPOINTS)
+	typedCDFs(settings, SIZES)
+	typedCDFs(settings, INTERVALS)
+	typedCDFs(settings, ENDPOINTS)
+	PingPlotter(settings)
 	RttPlotter(settings)
 }

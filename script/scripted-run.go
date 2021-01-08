@@ -38,9 +38,8 @@ type Settings struct {
 	MsgSizes     []int  `yaml:"msg_sizes"`     // in bytes
 	ResponseSize int    `yaml:"response_size"` // in bytes
 	TlsEnabled   string `yaml:"tls_enabled"`
+	ExecDir      string `yaml:"exec_dir"`
 }
-
-const LogPath = "/execdir/"
 
 func main() {
 
@@ -49,7 +48,7 @@ func main() {
 	}
 
 	// Settings parsing
-	file, err := ioutil.ReadFile(LogPath + os.Args[1])
+	file, err := ioutil.ReadFile(os.Args[1])
 	errMgmt(err)
 	var settings Settings
 	err = yaml.Unmarshal(file, &settings)
@@ -70,15 +69,15 @@ func main() {
 	stopPing := make(chan os.Signal, 1)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go pingThread(&wg, settings.PingIp, settings.PingInterval, stopPing)
+	go pingThread(&wg, settings.ExecDir, settings.PingIp, settings.PingInterval, stopPing)
 
 	for i := 1; i <= settings.Runs; i++ {
 		log.Println("Running Iperf...")
-		iperfer(i, settings.IperfIp, settings.IperfPort)
+		iperfer(i, settings.ExecDir, settings.IperfIp, settings.IperfPort)
 		log.Println("Iperf complete!")
 		stopTcpdump := make(chan os.Signal, 1)
 		wg.Add(1)
-		go tcpDumper(i, settings, &wg, stopTcpdump)
+		go tcpDumper(i, settings, &wg, stopTcpdump, settings.ExecDir)
 		startTime := getTimestamp()
 		for _, addr := range settings.Endpoints {
 			for _, inter := range settings.Intervals {
@@ -118,8 +117,8 @@ func main() {
 	log.Println("Everything's complete!")
 }
 
-func iperfer(run int, ip string, port string) {
-	iperfFile, err := os.Create(LogPath + strconv.Itoa(run) + "-iperf_report.txt")
+func iperfer(run int, execdir, ip, port string) {
+	iperfFile, err := os.Create(execdir + strconv.Itoa(run) + "-iperf_report.txt")
 	errMgmt(err)
 	defer iperfFile.Close()
 
@@ -128,8 +127,8 @@ func iperfer(run int, ip string, port string) {
 	errMgmt(err)
 }
 
-func pingThread(wg *sync.WaitGroup, address string, interval int, c chan os.Signal) {
-	osRtt, err := os.Create(LogPath + "ping_report.txt")
+func pingThread(wg *sync.WaitGroup, execdir, address string, interval int, c chan os.Signal) {
+	osRtt, err := os.Create(execdir + "ping_report.txt")
 	errMgmt(err)
 	defer osRtt.Close()
 	pingerCmd := exec.Command("ping", address, "-i", strconv.Itoa(interval), "-D")
@@ -148,7 +147,7 @@ func pingThread(wg *sync.WaitGroup, address string, interval int, c chan os.Sign
 	wg.Done()
 }
 
-func tcpDumper(run int, settings Settings, wg *sync.WaitGroup, c chan os.Signal) {
+func tcpDumper(run int, settings Settings, wg *sync.WaitGroup, c chan os.Signal, execdir string) {
 	tcpdumper := exec.Command("tshark",
 		"-ni", "any",
 		"-Y", "tcp.analysis.ack_rtt and ip.dst==172.0.0.0/8",
@@ -183,7 +182,7 @@ func tcpDumper(run int, settings Settings, wg *sync.WaitGroup, c chan os.Signal)
 	records, _ := csv.NewReader(bytes.NewReader(out.Bytes())).ReadAll()
 
 	pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
-	w, err := os.Create(LogPath + strconv.Itoa(run) + "-tcpPlot.pdf")
+	w, err := os.Create(execdir + strconv.Itoa(run) + "-tcpPlot.pdf")
 	if err != nil {
 		panic(err)
 	}

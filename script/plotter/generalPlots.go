@@ -17,19 +17,19 @@ import (
 	"strings"
 )
 
-func PingPlotter(destination string) {
+func PingPlotter(settings Settings) {
 	fmt.Println("Plotting Ping")
 	p, err := plot.New()
 	errMgmt(err)
 
 	p.X.Label.Text = "Time (s)"
 	p.Y.Label.Text = "OS RTT (ms)"
-	p.Title.Text = "Ping destination: " + destination
-	p.X.Tick.Marker = hplot.Ticks{N: 15}
-	p.Y.Tick.Marker = hplot.Ticks{N: 15}
+	p.Title.Text = "Ping destination: " + settings.PingIp
+	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
+	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 
-	// Open the desired files
-	file, err := os.Open(LogPath + "ping_report.txt")
+	// Open the desired file
+	file, err := os.Open(settings.ExecDir + "ping_report.txt")
 	errMgmt(err)
 
 	var values plotter.XYs
@@ -62,7 +62,7 @@ func PingPlotter(destination string) {
 	})
 	err = plotutil.AddLines(p, "Ping RTT", values)
 
-	if err := p.Save(1500, 1000, LogPath+"pingPlot.pdf"); err != nil {
+	if err := p.Save(1500, 1000, settings.ExecDir+"pingPlot.pdf"); err != nil {
 		panic(err)
 	}
 }
@@ -70,7 +70,7 @@ func PingPlotter(destination string) {
 func RttPlotter(settings Settings) {
 	fmt.Println("Plotting E2E RTT")
 	pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
-	w, err := os.Create(LogPath + "e2eLatency.pdf")
+	w, err := os.Create(settings.ExecDir + "e2eLatency.pdf")
 	if err != nil {
 		panic(err)
 	}
@@ -83,7 +83,7 @@ func RttPlotter(settings Settings) {
 				var absoluteFirst float64
 				var lastOfRun float64
 				for run := 1; run <= settings.Runs; run++ {
-					file, err := os.Open(LogPath +
+					file, err := os.Open(settings.ExecDir +
 						strconv.Itoa(run) + "-" + addr.Destination + ".i" + strconv.Itoa(inter) + ".x" + strconv.Itoa(size) + ".csv")
 					if err == nil {
 						records, _ := csv.NewReader(file).ReadAll()
@@ -120,8 +120,8 @@ func RttPlotter(settings Settings) {
 				errMgmt(err)
 				p.X.Label.Text = "Time (s)"
 				p.Y.Label.Text = "E2E RTT (ms)"
-				p.Y.Tick.Marker = hplot.Ticks{N: 15}
-				p.X.Tick.Marker = hplot.Ticks{N: 15}
+				p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
+				p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 				p.Title.Text = "E2E Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
 				sort.Slice(values, func(i, j int) bool {
 					return values[i].Y < values[j].Y

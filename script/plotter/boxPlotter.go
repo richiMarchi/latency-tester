@@ -14,82 +14,51 @@ import (
 	"strings"
 )
 
-func SizesBoxPlot(settings Settings) {
-	rows := len(settings.Endpoints)
-	cols := len(settings.Intervals)
-	elems := len(settings.MsgSizes)
+func typedBoxPlots(settings Settings, objectType int) {
+	rows, cols, elems := getLoopElems(settings, objectType)
 	min := math.Inf(1)
 	max := math.Inf(-1)
+	var filename string
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
 		for j := 0; j < cols; j++ {
-			var tmpMin float64
-			var tmpMax float64
-			plots[i][j], tmpMin, tmpMax = intXepBoxPlot(settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes)
+			var tmpMin, tmpMax float64
+			switch objectType {
+			case ENDPOINTS:
+				plots[i][j], tmpMin, tmpMax = intXsizeBoxPlot(
+					settings.MsgSizes[i], settings.Intervals[j], settings.Endpoints, settings.ExecDir)
+				filename = "endpointsBoxPlot"
+			case INTERVALS:
+				plots[i][j], tmpMin, tmpMax = sizeXepBoxPlot(
+					settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals, settings.ExecDir)
+				filename = "intervalsBoxPlot"
+			case SIZES:
+				plots[i][j], tmpMin, tmpMax = intXepBoxPlot(
+					settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes, settings.ExecDir)
+				filename = "sizesBoxPlot"
+			default:
+				panic("Wrong objectType in loop elements: only values 0,1 and 2 are allowed")
+			}
 			min = floats.Min([]float64{min, tmpMin})
 			max = floats.Max([]float64{max, tmpMax})
 		}
 	}
 
 	adjustMinMaxY(plots, rows, cols, min-1, max+3)
-	commonPlotting(plots, rows, cols, 100+cols*elems*200, "sizesBoxPlot")
-}
-
-func IntervalsBoxPlot(settings Settings) {
-	rows := len(settings.Endpoints)
-	cols := len(settings.MsgSizes)
-	elems := len(settings.Intervals)
-	min := math.Inf(1)
-	max := math.Inf(-1)
-	plots := make([][]*plot.Plot, rows)
-	for i := 0; i < rows; i++ {
-		plots[i] = make([]*plot.Plot, cols)
-		for j := 0; j < cols; j++ {
-			var tmpMin float64
-			var tmpMax float64
-			plots[i][j], tmpMin, tmpMax = sizeXepBoxPlot(settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals)
-			min = floats.Min([]float64{min, tmpMin})
-			max = floats.Max([]float64{max, tmpMax})
-		}
-	}
-
-	adjustMinMaxY(plots, rows, cols, min-1, max+3)
-	commonPlotting(plots, rows, cols, 100+cols*elems*200, "intervalsBoxPlot")
-}
-
-func EndpointsBoxPlot(settings Settings) {
-	rows := len(settings.MsgSizes)
-	cols := len(settings.Intervals)
-	elems := len(settings.Endpoints)
-	min := math.Inf(1)
-	max := math.Inf(-1)
-	plots := make([][]*plot.Plot, rows)
-	for i := 0; i < rows; i++ {
-		plots[i] = make([]*plot.Plot, cols)
-		for j := 0; j < cols; j++ {
-			var tmpMin float64
-			var tmpMax float64
-			plots[i][j], tmpMin, tmpMax = intXsizeBoxPlot(settings.MsgSizes[i], settings.Intervals[j], settings.Endpoints)
-			min = floats.Min([]float64{min, tmpMin})
-			max = floats.Max([]float64{max, tmpMax})
-		}
-	}
-
-	adjustMinMaxY(plots, rows, cols, min-1, max+3)
-	commonPlotting(plots, rows, cols, 100+cols*elems*200, "endpointsBoxPlot")
+	commonPlotting(plots, rows, cols, 100+cols*elems*200, settings.ExecDir+filename)
 }
 
 func intXepBoxPlot(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}, si int, msgSizes []int) (*plot.Plot, float64, float64) {
+}, si int, msgSizes []int, execdir string) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for " + ep.Description + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	errMgmt(err)
 
 	// Open the desired files
-	openFiles := openDesiredFiles("-" + ep.Destination + ".i" + strconv.Itoa(si) + ".x")
+	openFiles := openDesiredFiles(execdir, "-"+ep.Destination+".i"+strconv.Itoa(si)+".x")
 
 	valuesMap := make(map[int]plotter.Values)
 
@@ -113,7 +82,7 @@ func intXepBoxPlot(ep struct {
 
 	p.X.Label.Text = "Request Size (KiB)"
 	p.Y.Label.Text = "E2E RTT (ms)"
-	p.Y.Tick.Marker = hplot.Ticks{N: 15}
+	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
 	return generateBoxPlotAndLimits(p, &valuesMap)
@@ -122,13 +91,13 @@ func intXepBoxPlot(ep struct {
 func sizeXepBoxPlot(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}, msgSize int, sis []int) (*plot.Plot, float64, float64) {
+}, msgSize int, sis []int, execdir string) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for message size " + strconv.Itoa(msgSize) + " and endpoint " + ep.Description)
 	p, err := plot.New()
 	errMgmt(err)
 
 	// Open the desired files
-	openFiles := openDesiredFiles("-"+ep.Destination+".i", ".x"+strconv.Itoa(msgSize)+".csv")
+	openFiles := openDesiredFiles(execdir, "-"+ep.Destination+".i", ".x"+strconv.Itoa(msgSize)+".csv")
 
 	valuesMap := make(map[int]plotter.Values)
 
@@ -152,7 +121,7 @@ func sizeXepBoxPlot(ep struct {
 
 	p.X.Label.Text = "Send Interval (ms)"
 	p.Y.Label.Text = "E2E RTT (ms)"
-	p.Y.Tick.Marker = hplot.Ticks{N: 15}
+	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
 	return generateBoxPlotAndLimits(p, &valuesMap)
@@ -161,13 +130,13 @@ func sizeXepBoxPlot(ep struct {
 func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}) (*plot.Plot, float64, float64) {
+}, execdir string) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
 
 	// Open the desired files
-	openFiles := openDesiredFiles(".i" + strconv.Itoa(si) + ".x" + strconv.Itoa(msgSize) + ".csv")
+	openFiles := openDesiredFiles(execdir, ".i"+strconv.Itoa(si)+".x"+strconv.Itoa(msgSize)+".csv")
 
 	valuesMap := make(map[string]plotter.Values)
 
@@ -206,6 +175,7 @@ func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 	w := vg.Points(100)
 	var position float64 = 0
 	for _, k := range keys {
+		// Remove the first three and last three percentiles in order to avoid unreadable plots
 		sort.Float64s(valuesMap[k])
 		toRemove := len(valuesMap[k]) / 100
 		valuesMap[k] = valuesMap[k][toRemove*3 : len(valuesMap[k])-toRemove*3]

@@ -14,35 +14,47 @@ import (
 	"strings"
 )
 
-func SizesCDF(settings Settings) {
-	rows := len(settings.Endpoints)
-	cols := len(settings.Intervals)
+func typedCDFs(settings Settings, objectType int) {
+	rows, cols, _ := getLoopElems(settings, objectType)
 	min := math.Inf(1)
 	max := math.Inf(-1)
+	var filename string
 	plots := make([][]*plot.Plot, rows)
 	for i := 0; i < rows; i++ {
 		plots[i] = make([]*plot.Plot, cols)
 		for j := 0; j < cols; j++ {
-			plots[i][j] = intXepCDF(settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes)
+			switch objectType {
+			case ENDPOINTS:
+				plots[i][j] = intXsizeCDF(settings.MsgSizes[i], settings.Intervals[j], settings.Endpoints, settings.ExecDir)
+				filename = "endpointsCDF"
+			case INTERVALS:
+				plots[i][j] = sizeXepCDF(settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals, settings.ExecDir)
+				filename = "intervalsCDF"
+			case SIZES:
+				plots[i][j] = intXepCDF(settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes, settings.ExecDir)
+				filename = "sizesCDF"
+			default:
+				panic("Wrong objectType in loop elements: only values 0,1 and 2 are allowed")
+			}
 			min = floats.Min([]float64{min, plots[i][j].X.Min})
 			max = floats.Max([]float64{max, plots[i][j].X.Max})
 		}
 	}
 
 	adjustMinMaxX(plots, rows, cols, min, max)
-	commonPlotting(plots, rows, cols, cols*500, "sizesCDF")
+	commonPlotting(plots, rows, cols, cols*500, settings.ExecDir+filename)
 }
 
 func intXepCDF(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}, si int, sizes []int) *plot.Plot {
+}, si int, sizes []int, execdir string) *plot.Plot {
 	fmt.Println("CDF for " + ep.Description + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	errMgmt(err)
 
 	// Open the desired files
-	openFiles := openDesiredFiles("-" + ep.Destination + ".i" + strconv.Itoa(si) + ".x")
+	openFiles := openDesiredFiles(execdir, "-"+ep.Destination+".i"+strconv.Itoa(si)+".x")
 
 	valuesMap := make(map[int]plotter.Values)
 
@@ -66,7 +78,7 @@ func intXepCDF(ep struct {
 
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
-	p.X.Tick.Marker = hplot.Ticks{N: 15}
+	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
 	generateCDFPlot(p, &valuesMap)
@@ -74,35 +86,16 @@ func intXepCDF(ep struct {
 	return p
 }
 
-func IntervalsCDF(settings Settings) {
-	rows := len(settings.Endpoints)
-	cols := len(settings.MsgSizes)
-	min := math.Inf(1)
-	max := math.Inf(-1)
-	plots := make([][]*plot.Plot, rows)
-	for i := 0; i < rows; i++ {
-		plots[i] = make([]*plot.Plot, cols)
-		for j := 0; j < cols; j++ {
-			plots[i][j] = sizeXepCDF(settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals)
-			min = floats.Min([]float64{min, plots[i][j].X.Min})
-			max = floats.Max([]float64{max, plots[i][j].X.Max})
-		}
-	}
-
-	adjustMinMaxX(plots, rows, cols, min, max)
-	commonPlotting(plots, rows, cols, cols*500, "intervalsCDF")
-}
-
 func sizeXepCDF(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}, msgSize int, sis []int) *plot.Plot {
+}, msgSize int, sis []int, execdir string) *plot.Plot {
 	fmt.Println("CDF for " + ep.Description + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
 
 	// Open the desired files
-	openFiles := openDesiredFiles("-"+ep.Destination+".i", ".x"+strconv.Itoa(msgSize)+".csv")
+	openFiles := openDesiredFiles(execdir, "-"+ep.Destination+".i", ".x"+strconv.Itoa(msgSize)+".csv")
 
 	valuesMap := make(map[int]plotter.Values)
 
@@ -134,35 +127,16 @@ func sizeXepCDF(ep struct {
 	return p
 }
 
-func EndpointsCDF(settings Settings) {
-	rows := len(settings.MsgSizes)
-	cols := len(settings.Intervals)
-	min := math.Inf(1)
-	max := math.Inf(-1)
-	plots := make([][]*plot.Plot, rows)
-	for i := 0; i < rows; i++ {
-		plots[i] = make([]*plot.Plot, cols)
-		for j := 0; j < cols; j++ {
-			plots[i][j] = intXsizeCDF(settings.MsgSizes[i], settings.Intervals[j], settings.Endpoints)
-			min = floats.Min([]float64{min, plots[i][j].X.Min})
-			max = floats.Max([]float64{max, plots[i][j].X.Max})
-		}
-	}
-
-	adjustMinMaxX(plots, rows, cols, min, max)
-	commonPlotting(plots, rows, cols, cols*500, "endpointsCDF")
-}
-
 func intXsizeCDF(msgSize int, si int, eps []struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}) *plot.Plot {
+}, execdir string) *plot.Plot {
 	fmt.Println("CDF for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
 
 	// Open the desired files
-	openFiles := openDesiredFiles(".i" + strconv.Itoa(si) + ".x" + strconv.Itoa(msgSize) + ".csv")
+	openFiles := openDesiredFiles(execdir, ".i"+strconv.Itoa(si)+".x"+strconv.Itoa(msgSize)+".csv")
 
 	valuesMap := make(map[string]plotter.Values)
 
@@ -197,6 +171,7 @@ func intXsizeCDF(msgSize int, si int, eps []struct {
 
 	var lines []interface{}
 	for _, k := range keys {
+		// Remove the last two percentiles in order to avoid unreadable plots
 		sort.Float64s(valuesMap[k])
 		toRemove := len(valuesMap[k]) / 100
 		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove*2]

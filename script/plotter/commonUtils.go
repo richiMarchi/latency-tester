@@ -16,6 +16,7 @@ import (
 	"strings"
 )
 
+// Draw a matrix of plots into a PDF
 func commonPlotting(plots [][]*plot.Plot, rows int, cols int, cardWidth int, filename string) {
 
 	img := vgpdf.New(vg.Points(float64(cardWidth)), vg.Points(float64(rows*650)))
@@ -41,7 +42,7 @@ func commonPlotting(plots [][]*plot.Plot, rows int, cols int, cardWidth int, fil
 		}
 	}
 
-	w, err := os.Create(LogPath + filename + ".pdf")
+	w, err := os.Create(filename + ".pdf")
 	if err != nil {
 		panic(err)
 	}
@@ -51,6 +52,7 @@ func commonPlotting(plots [][]*plot.Plot, rows int, cols int, cardWidth int, fil
 	}
 }
 
+// Return the name of a destination given the address
 func nameFromDest(dest string, eps *[]struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
@@ -63,6 +65,7 @@ func nameFromDest(dest string, eps *[]struct {
 	return "", false
 }
 
+// True if the int value is in the slice
 func intInSlice(a int, list []int) bool {
 	for _, b := range list {
 		if b == a {
@@ -72,6 +75,7 @@ func intInSlice(a int, list []int) bool {
 	return false
 }
 
+// Return the Y axis values for the CDF graph
 func yValsCDF(length int) []float64 {
 	var toReturn []float64
 	for i := 0; i < length; i++ {
@@ -86,6 +90,7 @@ func errMgmt(err error) {
 	}
 }
 
+// Unifies the min and max of each plot Y axis in the matrix
 func adjustMinMaxY(plots [][]*plot.Plot, rows, cols int, min, max float64) {
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
@@ -95,6 +100,7 @@ func adjustMinMaxY(plots [][]*plot.Plot, rows, cols int, min, max float64) {
 	}
 }
 
+// Unifies the min and max of each plot X axis in the matrix
 func adjustMinMaxX(plots [][]*plot.Plot, rows, cols int, min, max float64) {
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
@@ -104,18 +110,20 @@ func adjustMinMaxX(plots [][]*plot.Plot, rows, cols int, min, max float64) {
 	}
 }
 
-func openDesiredFiles(nameLike ...string) []*os.File {
-	files, err := ioutil.ReadDir(LogPath)
+// Open the files with the name containing the nameLike strings
+func openDesiredFiles(execdir string, nameLike ...string) []*os.File {
+	files, err := ioutil.ReadDir(execdir)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var openFiles []*os.File
 	for _, f := range files {
 		if strings.Contains(f.Name(), nameLike[0]) {
+			// It can contain one or two strings, so it checks if the second value is present and then if it is in the name
 			if len(nameLike) > 1 && !strings.Contains(f.Name(), nameLike[1]) {
 				continue
 			}
-			file, err := os.Open(LogPath + f.Name())
+			file, err := os.Open(execdir + f.Name())
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -125,6 +133,7 @@ func openDesiredFiles(nameLike ...string) []*os.File {
 	return openFiles
 }
 
+// Return a BoxPlot graph and its min and max values
 func generateBoxPlotAndLimits(p *plot.Plot, valuesMap *map[int]plotter.Values) (*plot.Plot, float64, float64) {
 	// Get map ordered keys
 	keys := make([]int, 0, len(*valuesMap))
@@ -139,6 +148,7 @@ func generateBoxPlotAndLimits(p *plot.Plot, valuesMap *map[int]plotter.Values) (
 	w := vg.Points(100)
 	var position float64 = 0
 	for _, k := range keys {
+		// Remove the first three and last three percentiles in order to avoid unreadable plots
 		sort.Float64s((*valuesMap)[k])
 		toRemove := len((*valuesMap)[k]) / 100
 		(*valuesMap)[k] = (*valuesMap)[k][toRemove*3 : len((*valuesMap)[k])-toRemove*3]
@@ -154,6 +164,7 @@ func generateBoxPlotAndLimits(p *plot.Plot, valuesMap *map[int]plotter.Values) (
 	return p, floats.Min(mins), floats.Max(maxes)
 }
 
+// Return a CDF graph
 func generateCDFPlot(p *plot.Plot, valuesMap *map[int]plotter.Values) {
 	// Get map ordered keys
 	keys := make([]int, 0, len(*valuesMap))
@@ -164,6 +175,7 @@ func generateCDFPlot(p *plot.Plot, valuesMap *map[int]plotter.Values) {
 
 	var lines []interface{}
 	for _, k := range keys {
+		// Remove the last two percentiles in order to avoid unreadable plots
 		sort.Float64s((*valuesMap)[k])
 		toRemove := len((*valuesMap)[k]) / 100
 		(*valuesMap)[k] = (*valuesMap)[k][:len((*valuesMap)[k])-toRemove*2]
@@ -176,4 +188,17 @@ func generateCDFPlot(p *plot.Plot, valuesMap *map[int]plotter.Values) {
 	}
 	err := plotutil.AddLines(p, lines...)
 	errMgmt(err)
+}
+
+func getLoopElems(settings Settings, objectType int) (int, int, int) {
+	switch objectType {
+	case ENDPOINTS:
+		return len(settings.MsgSizes), len(settings.Intervals), len(settings.Endpoints)
+	case INTERVALS:
+		return len(settings.Endpoints), len(settings.MsgSizes), len(settings.Intervals)
+	case SIZES:
+		return len(settings.Endpoints), len(settings.Intervals), len(settings.MsgSizes)
+	default:
+		panic("Wrong objectType in loop elements: only values 0,1 and 2 are allowed")
+	}
 }

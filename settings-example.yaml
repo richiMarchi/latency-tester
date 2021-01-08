@@ -36,3 +36,5 @@ msg_sizes:
 response_size: 1024
 # True if TLS enabled
 tls_enabled: "true"
+# Execution directory (if in Docker, this must coincide with the mapped directory)
+exec_dir: "/execdir/"
