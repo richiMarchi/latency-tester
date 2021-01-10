@@ -8,7 +8,31 @@ Collected metrics (.csv file as output):
 * E2E application delay with Websocket
 * TCP main socket parameters
 
-If requested, the result of traceroute can be retrieved too.
+The client is wrapped around by an enhanced version of it, that is able to run the client in the most powerful way by
+defining many parameters in a single YAML file and generates few helpful plots to analyse data.
+
+The structure of the project repository is:
+
+- Enhanced Client
+  - Client
+  - Plotter
+- Server
+
+## Server
+
+The server is a simple thread that receives packets from the client, adds the timestamp and sends it back. It can be
+deployed in all kind of environments provided that the client is able to reach it from inside or outside the LAN.
+
+## Client
+
+The client is a complex but easy to run executable, flexible with its parameters and efficient for the language used and
+the protocol chosen. It is useful in cloud environments, where we are able to consistently calculate the latency towards
+a pod instead of having to rely on the standard ping tool, which usually cannot even be used.
+
+Initially it sets server response packet size with a control message. Then it starts sending the packets requested by
+the user input flags and stores the RTT inside a csv file. If requested it stores TCP socket statistics and a traceroute
+output too. **Beware of the TCP stats, because if the execution is long, the size of the output will be incredibly
+huge!**
 
 ## How to run
 
@@ -16,7 +40,7 @@ If requested, the result of traceroute can be retrieved too.
 
 ```
 docker pull richimarchi/latency-tester_server
-docker run -p 8080:8080 [--name <container-name>] richimarchi/latency-tester_server:latest [-addr=<ip:port>] [-tls=<enabled>]
+docker run -p 8080:8080 [--name <container-name>] richimarchi/latency-tester_server [-addr=<ip:port>] [-tls=<enabled>]
 ```
 
 #### Server flags:
@@ -30,7 +54,7 @@ docker run -p 8080:8080 [--name <container-name>] richimarchi/latency-tester_ser
 
 ```
 docker pull richimarchi/latency-tester_client
-docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/latency-tester_client:latest [-reps=<repetitions>] [-requestPayload=<bytes>] [-responsePayload=<bytes>] [-interval=<ms>] [-tcpStats=<enabled>] [-tls=<enabled>] [-traceroute=<address>] [-log=<log-file>] <address>
+docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/latency-tester_client [-reps=<repetitions>] [-requestPayload=<bytes>] [-responsePayload=<bytes>] [-interval=<ms>] [-tcpStats=<enabled>] [-tls=<enabled>] [-traceroute=<address>] [-log=<log-file>] <address>
 ```
 
 #### Required input parameters
@@ -65,19 +89,39 @@ kubectl apply -f customServerDeployment.yaml
 *N.B.: Ingress annotations are ingress controller dependent*
 
 
-## Latency Tester Automated Enhanced Client
+## Latency Tester Enhanced Client
+
+The enhanced client wraps the client and uses the file given as input to define the loops, the destinations and the different
+parameters required, in order to have a variety of results from a single client to one or more servers.
+It runs ping, tcpdump and the client of the tool to keep track of the latency at network, transport and application
+level, so that we have a complete overview of all the layers.
+
+Ping and tcpdump run in parallel, while the main loop executes the client combining the endpoints, the message send
+intervals and the message sizes repeating it the requested times with a custom frequency. Before every run, an iperf run
+registers the bandwidth of the network.
+
+As output we will have the raw files but there will be also a folder called `plots` containing some graphs generated
+using that data, so that the user can easily and quickly analyse the results of the test.
 
 ### Enhanced Client Workflow
 
-![alt text](workflow.png "Workflow")
+![alt text](images/workflow.png "Workflow")
 
 ### Enhanced Client Run
 
 ```
-docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/latency-tester_script:latest <settings-yaml-file>
+docker pull richimarchi/latency-tester_enhanced
+docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/latency-tester_enhanced <settings-yaml-file>
 ```
 
 *If you want to disable TCP CUBIC window shrinking for long send intervals, add `--sysctl net.ipv4.tcp_slow_start_after_idle=0` flag*
+
+If you want to re-run the plotting on the results of an enhanced client, here's what you can do:
+
+```
+docker pull richimarchi/latency-tester_plotter
+docker run --rm -v <local-log-folder>:/execdir richimarchi/latency-tester_plotter <settings-yaml-file>
+```
 
 #### Required input parameters
 
@@ -132,12 +176,36 @@ tls_enabled: "true"
 exec_dir: "/execdir/"
 ```
 
-### Enhanced Client Output
+### Enhanced Client Output Examples
 
 - Client csv output files
+  
+  ![alt text](images/client-rtt.png "Client CSV")
+
 - Iperf raw report
-- Boxplots
-- CDF plots
+  
+  ![alt text](images/iperf.png "Iperf Raw")
+
+- Ping raw report
+
+  ![alt text](images/ping.png "Ping Raw")
+
+- Boxplot
+  
+  ![alt text](images/boxplot.png "Boxplot")
+
+- CDF plots (3 versions, with each param as subject)
+
+  ![alt text](images/cdf.png "CDF")
+
 - E2E latency plots
+
+  ![alt text](images/e2e.png "E2E latency")
+
 - TCP ACK RTT plots
+
+  ![alt text](images/tcp.png "TCP latency")
+
 - Ping plot
+
+  ![alt text](images/pingplot.png "OS latency")
