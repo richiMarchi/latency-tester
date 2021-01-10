@@ -10,7 +10,7 @@ Collected metrics (.csv file as output):
 
 If requested, the result of traceroute can be retrieved too.
 
-## How to run the docker
+## How to run
 
 ### Server
 
@@ -65,16 +65,16 @@ kubectl apply -f customServerDeployment.yaml
 *N.B.: Ingress annotations are ingress controller dependent*
 
 
-## Latency Tester Automated Script
+## Latency Tester Automated Enhanced Client
 
-### Script Workflow
+### Enhanced Client Workflow
 
 ![alt text](workflow.png "Workflow")
 
-### Script Run
+### Enhanced Client Run
 
 ```
-docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/lat-test_scripted-run:automated <settings-yaml-file>
+docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/latency-tester_script:latest <settings-yaml-file>
 ```
 
 *If you want to disable TCP CUBIC window shrinking for long send intervals, add `--sysctl net.ipv4.tcp_slow_start_after_idle=0` flag*
@@ -83,7 +83,7 @@ docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/
 
 |Param|Description|
 |---|---|
-|`<settings-yaml-file>`|Yaml file that defines all the parameters needed for the script to run (example of the file in the section below)|
+|`<settings-yaml-file>`|Yaml file that defines all the parameters needed for the enhanced client to run (example of the file in the section below)|
 
 ### Input Parameters
 
@@ -128,9 +128,11 @@ msg_sizes:
 response_size: 1024
 # True if TLS enabled
 tls_enabled: "true"
+# Execution directory (if in Docker, this must coincide with the mapped directory)
+exec_dir: "/execdir/"
 ```
 
-### Script Output
+### Enhanced Client Output
 
 - Client csv output files
 - Iperf raw report
