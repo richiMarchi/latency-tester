@@ -43,6 +43,8 @@ docker pull richimarchi/latency-tester_server
 docker run -p 8080:8080 [--name <container-name>] richimarchi/latency-tester_server [-addr=<ip:port>] [-tls=<enabled>]
 ```
 
+Latest version: `1.0.0`
+
 #### Server flags:
 
 |Param|Description|Default Value|
@@ -56,6 +58,8 @@ docker run -p 8080:8080 [--name <container-name>] richimarchi/latency-tester_ser
 docker pull richimarchi/latency-tester_client
 docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/latency-tester_client [-reps=<repetitions>] [-requestPayload=<bytes>] [-responsePayload=<bytes>] [-interval=<ms>] [-tcpStats=<enabled>] [-tls=<enabled>] [-traceroute=<address>] [-log=<log-file>] <address>
 ```
+
+Latest version: `1.0.0`
 
 #### Required input parameters
 
@@ -114,6 +118,8 @@ docker pull richimarchi/latency-tester_enhanced
 docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/latency-tester_enhanced <settings-yaml-file>
 ```
 
+Latest version: `1.0.0`
+
 *If you want to disable TCP CUBIC window shrinking for long send intervals, add `--sysctl net.ipv4.tcp_slow_start_after_idle=0` flag*
 
 If you want to re-run the plotting on the results of an enhanced client, here's what you can do:
@@ -122,6 +128,8 @@ If you want to re-run the plotting on the results of an enhanced client, here's 
 docker pull richimarchi/latency-tester_plotter
 docker run --rm -v <local-log-folder>:/execdir richimarchi/latency-tester_plotter <settings-yaml-file>
 ```
+
+Latest version: `1.0.0`
 
 #### Required input parameters
 
