@@ -137,6 +137,32 @@ Latest version: `1.0.0`
 |---|---|
 |`<settings-yaml-file>`|Yaml file that defines all the parameters needed for the enhanced client to run (example of the file in the section below)|
 
+### Enhanced Client Ansible Deployment
+
+It is possible to deploy the enhanced client on more than one host with the provided ansible playbook.
+
+On the remote hosts:
+
+- Add your local SSH public key in the `~/.ssh/authorized_keys`
+  
+On the local host:
+
+- Edit the `~/.ssh/config` file by defining each of your remote hosts with a mapping like this one:
+  ```
+  Host <custom-hostname>
+  Hostname <remote-ip>
+  User <remote-user>
+  ```
+- Edit the `ansible/hosts` file by adding the list of all `<custom-name>` selected for each host in the step before
+- Create a settings file  in the `ansible` directory
+- Edit the `vars` section in the `ansible/playbook.yml` file, by selecting the remote directory name, the name of the 
+  settings file created the step before and the version of the enhanced client you want to use
+  
+Once everything is set, move to the `ansible` directory and run the playbook with the command:
+```
+ansible-playbook playbook.yml
+```
+
 ### Input Parameters
 
 Here is an example of the input file:
