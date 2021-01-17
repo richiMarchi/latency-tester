@@ -23,4 +23,4 @@
       dest: "{{ ansible_user_dir }}/{{ workdir }}"
 
   - name: Run docker
-    command: "docker run -v {{ ansible_user_dir }}/{{ workdir }}:/execdir --rm -d richimarchi/latency-tester_enhanced:{{ tool_version }} /execdir/{{ settings_file }}"
+    command: "docker run -v {{ ansible_user_dir }}/{{ workdir }}:/execdir --rm -d --sysctl net.ipv4.tcp_slow_start_after_idle=0 richimarchi/latency-tester_enhanced:{{ tool_version }} /execdir/{{ settings_file }}"
