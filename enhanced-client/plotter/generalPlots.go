@@ -107,9 +107,6 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 			previousStream = streamId
 		}
 		if previousStream != streamId || index == len(records)-1 {
-			if streamCounter != 0 {
-				pdfToSave.NextPage()
-			}
 			// If it is the last iteration, add the last record before saving to pdf
 			if index == len(records)-1 {
 				// Convert values to ms
@@ -132,9 +129,14 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 				return values[i].X < values[j].X
 			})
 			err = plotutil.AddLines(p, "ACK RTT", values)
-			p.Draw(draw.New(pdfToSave))
+			if !(p.X.Max-p.X.Min < (float64(settings.RunsStepDuration) - (float64(settings.RunsStepDuration) / 10))) {
+				if streamCounter != 0 {
+					pdfToSave.NextPage()
+				}
+				p.Draw(draw.New(pdfToSave))
+				streamCounter += 1
+			}
 			values = values[:0]
-			streamCounter += 1
 			previousStream = streamId
 		}
 		// Convert values to ms
