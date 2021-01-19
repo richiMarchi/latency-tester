@@ -58,7 +58,7 @@ func PingPlotter(settings Settings, wg *sync.WaitGroup) {
 		return values[i].Y < values[j].Y
 	})
 	toRemove := len(values) / 100
-	values = values[:len(values)-toRemove*3]
+	values = values[:len(values)-toRemove*settings.PercentilesToRemove]
 	sort.Slice(values, func(i, j int) bool {
 		return values[i].X < values[j].X
 	})
@@ -124,7 +124,7 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 				return values[i].Y < values[j].Y
 			})
 			toRemove := len(values) / 100
-			values = values[:len(values)-toRemove*3]
+			values = values[:len(values)-toRemove*settings.PercentilesToRemove]
 			sort.Slice(values, func(i, j int) bool {
 				return values[i].X < values[j].X
 			})
@@ -213,7 +213,7 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 					return values[i].Y < values[j].Y
 				})
 				toRemove := len(values) / 100
-				values = values[:len(values)-toRemove*3]
+				values = values[:len(values)-toRemove*settings.PercentilesToRemove]
 				sort.Slice(values, func(i, j int) bool {
 					return values[i].X < values[j].X
 				})

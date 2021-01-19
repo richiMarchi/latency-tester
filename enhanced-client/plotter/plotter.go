@@ -21,11 +21,12 @@ type Settings struct {
 		Description string `yaml:"description"`
 		Destination string `yaml:"destination"`
 	} `yaml:"endpoints"`
-	Intervals    []int  `yaml:"intervals"`     // in milliseconds
-	MsgSizes     []int  `yaml:"msg_sizes"`     // in bytes
-	ResponseSize int    `yaml:"response_size"` // in bytes
-	TlsEnabled   string `yaml:"tls_enabled"`
-	ExecDir      string `yaml:"exec_dir"`
+	Intervals           []int  `yaml:"intervals"`     // in milliseconds
+	MsgSizes            []int  `yaml:"msg_sizes"`     // in bytes
+	ResponseSize        int    `yaml:"response_size"` // in bytes
+	TlsEnabled          string `yaml:"tls_enabled"`
+	ExecDir             string `yaml:"exec_dir"`
+	PercentilesToRemove int    `yaml:"percentiles_to_remove"`
 }
 
 const (

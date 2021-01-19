@@ -27,16 +27,16 @@ func typedBoxPlots(settings Settings, objectType int, wg *sync.WaitGroup) {
 			var tmpMin, tmpMax float64
 			switch objectType {
 			case ENDPOINTS:
-				plots[i][j], tmpMin, tmpMax = intXsizeBoxPlot(
-					settings.MsgSizes[i], settings.Intervals[j], settings.Endpoints, settings.ExecDir)
+				plots[i][j], tmpMin, tmpMax = intXsizeBoxPlot(settings.MsgSizes[i], settings.Intervals[j], settings.Endpoints,
+					settings.ExecDir, settings.PercentilesToRemove)
 				filename = "endpointsBoxPlot"
 			case INTERVALS:
-				plots[i][j], tmpMin, tmpMax = sizeXepBoxPlot(
-					settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals, settings.ExecDir)
+				plots[i][j], tmpMin, tmpMax = sizeXepBoxPlot(settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals,
+					settings.ExecDir, settings.PercentilesToRemove)
 				filename = "intervalsBoxPlot"
 			case SIZES:
-				plots[i][j], tmpMin, tmpMax = intXepBoxPlot(
-					settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes, settings.ExecDir)
+				plots[i][j], tmpMin, tmpMax = intXepBoxPlot(settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes,
+					settings.ExecDir, settings.PercentilesToRemove)
 				filename = "sizesBoxPlot"
 			default:
 				panic("Wrong objectType in loop elements: only values 0,1 and 2 are allowed")
@@ -56,7 +56,7 @@ func typedBoxPlots(settings Settings, objectType int, wg *sync.WaitGroup) {
 func intXepBoxPlot(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}, si int, msgSizes []int, execdir string) (*plot.Plot, float64, float64) {
+}, si int, msgSizes []int, execdir string, percentilesToRemove int) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for " + ep.Description + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	errMgmt(err)
@@ -89,14 +89,14 @@ func intXepBoxPlot(ep struct {
 	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
-	return generateBoxPlotAndLimits(p, &valuesMap)
+	return generateBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
 }
 
 // Return a boxplot of the e2e rtt of the intervals given the size and the endpoint
 func sizeXepBoxPlot(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}, msgSize int, sis []int, execdir string) (*plot.Plot, float64, float64) {
+}, msgSize int, sis []int, execdir string, percentilesToRemove int) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for message size " + strconv.Itoa(msgSize) + " and endpoint " + ep.Description)
 	p, err := plot.New()
 	errMgmt(err)
@@ -129,14 +129,14 @@ func sizeXepBoxPlot(ep struct {
 	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
-	return generateBoxPlotAndLimits(p, &valuesMap)
+	return generateBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
 }
 
 // Return a boxplot of the e2e rtt of the endpoints given the interval and the size
 func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}, execdir string) (*plot.Plot, float64, float64) {
+}, execdir string, percentilesToRemove int) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
@@ -184,7 +184,7 @@ func intXsizeBoxPlot(msgSize int, si int, eps []struct {
 		// Remove the first three and last three percentiles in order to avoid unreadable plots
 		sort.Float64s(valuesMap[k])
 		toRemove := len(valuesMap[k]) / 100
-		valuesMap[k] = valuesMap[k][toRemove*3 : len(valuesMap[k])-toRemove*3]
+		valuesMap[k] = valuesMap[k][toRemove*percentilesToRemove : len(valuesMap[k])-toRemove*percentilesToRemove]
 		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
 		errMgmt(err)
 		nominals = append(nominals, k+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")

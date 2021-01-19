@@ -134,7 +134,9 @@ func openDesiredFiles(execdir string, nameLike ...string) []*os.File {
 }
 
 // Return a BoxPlot graph and its min and max values
-func generateBoxPlotAndLimits(p *plot.Plot, valuesMap *map[int]plotter.Values) (*plot.Plot, float64, float64) {
+func generateBoxPlotAndLimits(p *plot.Plot,
+	valuesMap *map[int]plotter.Values,
+	percentilesToRemove int) (*plot.Plot, float64, float64) {
 	// Get map ordered keys
 	keys := make([]int, 0, len(*valuesMap))
 	for k := range *valuesMap {
@@ -151,7 +153,7 @@ func generateBoxPlotAndLimits(p *plot.Plot, valuesMap *map[int]plotter.Values) (
 		// Remove the first three and last three percentiles in order to avoid unreadable plots
 		sort.Float64s((*valuesMap)[k])
 		toRemove := len((*valuesMap)[k]) / 100
-		(*valuesMap)[k] = (*valuesMap)[k][toRemove*3 : len((*valuesMap)[k])-toRemove*3]
+		(*valuesMap)[k] = (*valuesMap)[k][toRemove*percentilesToRemove : len((*valuesMap)[k])-toRemove*percentilesToRemove]
 		boxplot, err := plotter.NewBoxPlot(w, position, (*valuesMap)[k])
 		errMgmt(err)
 		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
@@ -165,7 +167,7 @@ func generateBoxPlotAndLimits(p *plot.Plot, valuesMap *map[int]plotter.Values) (
 }
 
 // Return a CDF graph
-func generateCDFPlot(p *plot.Plot, valuesMap *map[int]plotter.Values) {
+func generateCDFPlot(p *plot.Plot, valuesMap *map[int]plotter.Values, percentilesToRemove int) {
 	// Get map ordered keys
 	keys := make([]int, 0, len(*valuesMap))
 	for k := range *valuesMap {
@@ -178,7 +180,7 @@ func generateCDFPlot(p *plot.Plot, valuesMap *map[int]plotter.Values) {
 		// Remove the last two percentiles in order to avoid unreadable plots
 		sort.Float64s((*valuesMap)[k])
 		toRemove := len((*valuesMap)[k]) / 100
-		(*valuesMap)[k] = (*valuesMap)[k][:len((*valuesMap)[k])-toRemove*2]
+		(*valuesMap)[k] = (*valuesMap)[k][:len((*valuesMap)[k])-toRemove*percentilesToRemove]
 		var toAdd plotter.XYs
 		for i, y := range yValsCDF(len((*valuesMap)[k])) {
 			toAdd = append(toAdd, plotter.XY{X: (*valuesMap)[k][i], Y: y})

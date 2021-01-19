@@ -38,3 +38,6 @@ response_size: 1024
 tls_enabled: "true"
 # Execution directory (if in Docker, this must coincide with the mapped directory)
 exec_dir: "/execdir/"
+
+# Plotting Settings
+percentiles_to_remove: 3

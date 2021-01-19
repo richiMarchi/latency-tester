@@ -26,13 +26,16 @@ func typedCDFs(settings Settings, objectType int, wg *sync.WaitGroup) {
 		for j := 0; j < cols; j++ {
 			switch objectType {
 			case ENDPOINTS:
-				plots[i][j] = intXsizeCDF(settings.MsgSizes[i], settings.Intervals[j], settings.Endpoints, settings.ExecDir)
+				plots[i][j] = intXsizeCDF(settings.MsgSizes[i], settings.Intervals[j], settings.Endpoints, settings.ExecDir,
+					settings.PercentilesToRemove)
 				filename = "endpointsCDF"
 			case INTERVALS:
-				plots[i][j] = sizeXepCDF(settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals, settings.ExecDir)
+				plots[i][j] = sizeXepCDF(settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals, settings.ExecDir,
+					settings.PercentilesToRemove)
 				filename = "intervalsCDF"
 			case SIZES:
-				plots[i][j] = intXepCDF(settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes, settings.ExecDir)
+				plots[i][j] = intXepCDF(settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes, settings.ExecDir,
+					settings.PercentilesToRemove)
 				filename = "sizesCDF"
 			default:
 				panic("Wrong objectType in loop elements: only values 0,1 and 2 are allowed")
@@ -52,7 +55,7 @@ func typedCDFs(settings Settings, objectType int, wg *sync.WaitGroup) {
 func intXepCDF(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}, si int, sizes []int, execdir string) *plot.Plot {
+}, si int, sizes []int, execdir string, percentilesToRemove int) *plot.Plot {
 	fmt.Println("CDF for " + ep.Description + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	errMgmt(err)
@@ -85,7 +88,7 @@ func intXepCDF(ep struct {
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
-	generateCDFPlot(p, &valuesMap)
+	generateCDFPlot(p, &valuesMap, percentilesToRemove)
 
 	return p
 }
@@ -94,7 +97,7 @@ func intXepCDF(ep struct {
 func sizeXepCDF(ep struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}, msgSize int, sis []int, execdir string) *plot.Plot {
+}, msgSize int, sis []int, execdir string, percentilesToRemove int) *plot.Plot {
 	fmt.Println("CDF for " + ep.Description + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
@@ -127,7 +130,7 @@ func sizeXepCDF(ep struct {
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
-	generateCDFPlot(p, &valuesMap)
+	generateCDFPlot(p, &valuesMap, percentilesToRemove)
 
 	return p
 }
@@ -136,7 +139,7 @@ func sizeXepCDF(ep struct {
 func intXsizeCDF(msgSize int, si int, eps []struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
-}, execdir string) *plot.Plot {
+}, execdir string, percentilesToRemove int) *plot.Plot {
 	fmt.Println("CDF for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
@@ -180,7 +183,7 @@ func intXsizeCDF(msgSize int, si int, eps []struct {
 		// Remove the last two percentiles in order to avoid unreadable plots
 		sort.Float64s(valuesMap[k])
 		toRemove := len(valuesMap[k]) / 100
-		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove*2]
+		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove*percentilesToRemove]
 		var toAdd plotter.XYs
 		for i, y := range yValsCDF(len(valuesMap[k])) {
 			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
