@@ -19,6 +19,11 @@ type IperfData struct {
 	Port string `yaml:"port"`
 }
 
+type PingData struct {
+	Name string `yaml:"name"`
+	Ip   string `yaml:"ip"`
+}
+
 type EndpointData struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
@@ -29,7 +34,7 @@ type Settings struct {
 	RunsInterval      int            `yaml:"runs_interval"`      // in minutes
 	RunsStepDuration  int            `yaml:"runs_step_duration"` // in seconds
 	IperfDestinations []IperfData    `yaml:"iperf_data"`
-	PingIp            string         `yaml:"ping_ip"`
+	PingDestinations  []PingData     `yaml:"ping_destinations"`
 	PingInterval      int            `yaml:"ping_interval"` // in seconds
 	Endpoints         []EndpointData `yaml:"endpoints"`
 	Intervals         []int          `yaml:"intervals"`     // in milliseconds
@@ -61,10 +66,12 @@ func main() {
 	log.Println("TCP congestion control algorithm: ", val)
 
 	// Start ping and tcpdump in background
-	stopPing := make(chan os.Signal, 1)
+	stopPing := make(chan os.Signal, len(settings.PingDestinations))
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go pingThread(&wg, settings.ExecDir, settings.PingIp, settings.PingInterval, stopPing)
+	wg.Add(len(settings.PingDestinations))
+	for _, dest := range settings.PingDestinations {
+		go pingThread(&wg, settings.ExecDir, dest, settings.PingInterval, stopPing)
+	}
 
 	for i := 1; i <= settings.Runs; i++ {
 		log.Println("Running Iperf...")
@@ -108,7 +115,9 @@ func main() {
 		}
 	}
 
-	stopPing <- os.Interrupt
+	for range settings.PingDestinations {
+		stopPing <- os.Interrupt
+	}
 	wg.Wait()
 
 	// Plotting
@@ -129,11 +138,11 @@ func iperfer(run int, execdir string, iperfData IperfData) {
 	errMgmt(err)
 }
 
-func pingThread(wg *sync.WaitGroup, execdir, address string, interval int, c chan os.Signal) {
-	osRtt, err := os.Create(execdir + "ping_report.txt")
+func pingThread(wg *sync.WaitGroup, execdir string, destination PingData, interval int, c chan os.Signal) {
+	osRtt, err := os.Create(execdir + "ping_" + destination.Name + ".txt")
 	errMgmt(err)
 	defer osRtt.Close()
-	pingerCmd := exec.Command("ping", address, "-i", strconv.Itoa(interval), "-D")
+	pingerCmd := exec.Command("ping", destination.Ip, "-i", strconv.Itoa(interval), "-D")
 
 	// Handle stop
 	go func() {

@@ -58,10 +58,7 @@ func typedCDFs(settings Settings, objectType int, wg *sync.WaitGroup) {
 }
 
 // Return a cdf of the e2e rtt of the sizes given the interval and the endpoint
-func intXepCDF(ep struct {
-	Description string `yaml:"description"`
-	Destination string `yaml:"destination"`
-}, si int, sizes []int, execdir string, percentilesToRemove int) *plot.Plot {
+func intXepCDF(ep EndpointData, si int, sizes []int, execdir string, percentilesToRemove int) *plot.Plot {
 	fmt.Println("CDF for " + ep.Description + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	errMgmt(err)

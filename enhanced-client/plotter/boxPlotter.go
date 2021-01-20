@@ -65,10 +65,7 @@ func typedBoxPlots(settings Settings, objectType int, wg *sync.WaitGroup) {
 }
 
 // Return a boxplot of the e2e rtt of the sizes given the interval and the endpoint
-func intXepBoxPlot(ep struct {
-	Description string `yaml:"description"`
-	Destination string `yaml:"destination"`
-}, si int, msgSizes []int, execdir string, percentilesToRemove int) (*plot.Plot, float64, float64) {
+func intXepBoxPlot(ep EndpointData, si int, msgSizes []int, execdir string, percentilesToRemove int) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for " + ep.Description + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	errMgmt(err)
@@ -105,10 +102,7 @@ func intXepBoxPlot(ep struct {
 }
 
 // Return a boxplot of the e2e rtt of the intervals given the size and the endpoint
-func sizeXepBoxPlot(ep struct {
-	Description string `yaml:"description"`
-	Destination string `yaml:"destination"`
-}, msgSize int, sis []int, execdir string, percentilesToRemove int) (*plot.Plot, float64, float64) {
+func sizeXepBoxPlot(ep EndpointData, msgSize int, sis []int, execdir string, percentilesToRemove int) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for message size " + strconv.Itoa(msgSize) + " and endpoint " + ep.Description)
 	p, err := plot.New()
 	errMgmt(err)

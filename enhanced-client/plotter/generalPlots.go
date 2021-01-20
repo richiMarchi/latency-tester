@@ -20,53 +20,67 @@ import (
 
 func PingPlotter(settings Settings, wg *sync.WaitGroup) {
 	fmt.Println("Plotting Ping")
-	p, err := plot.New()
-	errMgmt(err)
 
-	p.X.Label.Text = "Time (s)"
-	p.Y.Label.Text = "OS RTT (ms)"
-	p.Title.Text = "Ping destination: " + settings.PingIp
-	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
-	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
-
-	// Open the desired file
-	file, err := os.Open(settings.ExecDir + "ping_report.txt")
-	errMgmt(err)
-
-	var values plotter.XYs
-	var firstTs float64
-	reader := bufio.NewReader(file)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			break
-		}
-		if strings.Contains(line, "time=") && strings.Contains(line, " ms") {
-			lineTs := line[1:strings.Index(line, "]")]
-			floatMs := line[strings.Index(line, "time=")+5 : strings.Index(line, " ms")]
-			timeInter, err := strconv.ParseFloat(lineTs, 64)
-			errMgmt(err)
-			rttVal, err := strconv.ParseFloat(floatMs, 64)
-			if len(values) == 0 {
-				firstTs = timeInter
-			}
-			values = append(values, plotter.XY{X: timeInter - firstTs, Y: rttVal})
-		}
-	}
-	// Remove the last three percentiles
-	sort.Slice(values, func(i, j int) bool {
-		return values[i].Y < values[j].Y
-	})
-	toRemove := len(values) / 100
-	values = values[:len(values)-toRemove*settings.PercentilesToRemove]
-	sort.Slice(values, func(i, j int) bool {
-		return values[i].X < values[j].X
-	})
-	err = plotutil.AddLines(p, "Ping RTT", values)
-
-	if err := p.Save(1500, 1000, settings.ExecDir+PlotDirName+"pingPlot.pdf"); err != nil {
+	pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
+	w, err := os.Create(settings.ExecDir + PlotDirName + "pingPlot.pdf")
+	if err != nil {
 		panic(err)
 	}
+
+	for i, dest := range settings.PingDestinations {
+		if i != 0 {
+			pdfToSave.NextPage()
+		}
+
+		// Open the desired file
+		file, err := os.Open(settings.ExecDir + "ping_" + dest.Name + ".txt")
+		errMgmt(err)
+
+		p, err := plot.New()
+		errMgmt(err)
+		p.X.Label.Text = "Time (s)"
+		p.Y.Label.Text = "OS RTT (ms)"
+		p.Title.Text = "Ping destination: " + dest.Name
+		p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
+		p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
+
+		var values plotter.XYs
+		var firstTs float64
+		reader := bufio.NewReader(file)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				break
+			}
+			if strings.Contains(line, "time=") && strings.Contains(line, " ms") {
+				lineTs := line[1:strings.Index(line, "]")]
+				floatMs := line[strings.Index(line, "time=")+5 : strings.Index(line, " ms")]
+				timeInter, err := strconv.ParseFloat(lineTs, 64)
+				errMgmt(err)
+				rttVal, err := strconv.ParseFloat(floatMs, 64)
+				if len(values) == 0 {
+					firstTs = timeInter
+				}
+				values = append(values, plotter.XY{X: timeInter - firstTs, Y: rttVal})
+			}
+		}
+		// Remove the last three percentiles
+		sort.Slice(values, func(i, j int) bool {
+			return values[i].Y < values[j].Y
+		})
+		toRemove := len(values) / 100
+		values = values[:len(values)-toRemove*settings.PercentilesToRemove]
+		sort.Slice(values, func(i, j int) bool {
+			return values[i].X < values[j].X
+		})
+		err = plotutil.AddLines(p, "Ping RTT", values)
+		p.Draw(draw.New(pdfToSave))
+	}
+
+	if _, err := pdfToSave.WriteTo(w); err != nil {
+		panic(err)
+	}
+	w.Close()
 
 	wg.Done()
 }

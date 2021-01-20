@@ -11,8 +11,10 @@ iperfs:
 - name: "Crownlabs"
   ip: "130.192.31.240"
   port: "80"
-# Ping IP
-ping_ip: "130.192.31.254"
+# Ping Destinations
+ping_destinations:
+- name: "Crownlabs"
+  ip: "130.192.31.254"
 # Interval between ping executions (in seconds)
 ping_interval: 30
 # List of endpoints to test E2E latency, defined by its name/description and its address

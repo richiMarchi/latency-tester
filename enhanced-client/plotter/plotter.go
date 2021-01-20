@@ -15,6 +15,11 @@ type IperfData struct {
 	Port string `yaml:"port"`
 }
 
+type PingData struct {
+	Name string `yaml:"name"`
+	Ip   string `yaml:"ip"`
+}
+
 type EndpointData struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
@@ -25,7 +30,7 @@ type Settings struct {
 	RunsInterval        int            `yaml:"runs_interval"`      // in minutes
 	RunsStepDuration    int            `yaml:"runs_step_duration"` // in seconds
 	IperfDestinations   []IperfData    `yaml:"iperf_data"`
-	PingIp              string         `yaml:"ping_ip"`
+	PingDestinations    []PingData     `yaml:"ping_destinations"`
 	PingInterval        int            `yaml:"ping_interval"` // in seconds
 	Endpoints           []EndpointData `yaml:"endpoints"`
 	Intervals           []int          `yaml:"intervals"`     // in milliseconds
