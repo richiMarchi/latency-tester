@@ -108,7 +108,7 @@ func adjustMinMaxX(plots [][]*plot.Plot, rows, cols int, min, max float64) {
 }
 
 // Open the files with the name containing the nameLike strings
-func openDesiredFiles(execdir string, nameLike ...string) []*os.File {
+func openDesiredFiles(execdir string, requestedRuns []int, nameLike ...string) []*os.File {
 	files, err := ioutil.ReadDir(execdir)
 	if err != nil {
 		log.Fatal(err)
@@ -116,8 +116,9 @@ func openDesiredFiles(execdir string, nameLike ...string) []*os.File {
 	var openFiles []*os.File
 	for _, f := range files {
 		if strings.Contains(f.Name(), nameLike[0]) {
+			fileRun, _ := strconv.Atoi(strings.Split(f.Name(), "-")[0])
 			// It can contain one or two strings, so it checks if the second value is present and then if it is in the name
-			if len(nameLike) > 1 && !strings.Contains(f.Name(), nameLike[1]) {
+			if len(nameLike) > 1 && !strings.Contains(f.Name(), nameLike[1]) || !intInSlice(fileRun, requestedRuns) {
 				continue
 			}
 			file, err := os.Open(execdir + f.Name())
@@ -260,4 +261,15 @@ func getTcpPlotTitle(settings Settings, streamCounter int) string {
 		}
 	}
 	panic("Cannot assign the title to the plot, buggy code!")
+}
+
+func requestedSlice(settings Settings) []int {
+	if settings.RunsToPlot != nil {
+		return settings.RunsToPlot
+	}
+	var toReturn []int
+	for i := 1; i <= settings.Runs; i++ {
+		toReturn = append(toReturn, i)
+	}
+	return toReturn
 }

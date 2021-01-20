@@ -41,6 +41,7 @@ type Settings struct {
 	PercentilesToRemove int            `yaml:"percentiles_to_remove"`
 	RttMin              float64        `yaml:"rtt_min"`
 	RttMax              float64        `yaml:"rtt_max"`
+	RunsToPlot          []int          `yaml:"runs_to_plot"`
 }
 
 const (
@@ -71,8 +72,8 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	wg.Add(8 + settings.Runs)
-	for run := 1; run <= settings.Runs; run++ {
+	wg.Add(8 + len(requestedSlice(settings)))
+	for _, run := range requestedSlice(settings) {
 		go TcpdumpPlotter(settings, run, &wg)
 	}
 	go typedBoxPlots(settings, SIZES, &wg)
@@ -82,6 +83,7 @@ func main() {
 	go typedCDFs(settings, INTERVALS, &wg)
 	go typedCDFs(settings, ENDPOINTS, &wg)
 	go PingPlotter(settings, &wg)
+	// Generates 2 pdfs, standard and boxplots
 	go RttPlotter(settings, &wg)
 	wg.Wait()
 }

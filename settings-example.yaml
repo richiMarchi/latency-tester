@@ -52,3 +52,7 @@ percentiles_to_remove: 3
 rtt_min: 10
 # The maximum value in the plot for the RTT
 rtt_max: 20
+# The runs we selectively want to plot
+runs_to_plot:
+- 1
+- 3

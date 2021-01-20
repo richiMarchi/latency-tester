@@ -179,6 +179,7 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 		panic(err)
 	}
 
+	requestedRuns := requestedSlice(settings)
 	for epIndex, addr := range settings.Endpoints {
 		for interIndex, inter := range settings.Intervals {
 			for sizeIndex, size := range settings.MsgSizes {
@@ -188,7 +189,7 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 				var absoluteFirst float64
 				var lastOfRun float64
 				var runTime string
-				for run := 1; run <= settings.Runs; run++ {
+				for runIndex, run := range requestedRuns {
 					file, err := os.Open(settings.ExecDir +
 						strconv.Itoa(run) + "-" + addr.Destination + ".i" + strconv.Itoa(inter) + ".x" + strconv.Itoa(size) + ".csv")
 					if err == nil {
@@ -224,8 +225,8 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 							}
 						}
 					}
-					if run%12 == 0 || run == settings.Runs {
-						if (epIndex+interIndex+sizeIndex) != 0 || run > 12 {
+					if runIndex+1%12 == 0 || runIndex+1 == len(requestedRuns) {
+						if (epIndex+interIndex+sizeIndex) != 0 || runIndex+1 > 12 {
 							hourlyPdfToSave.NextPage()
 						}
 						box, err := plot.New()

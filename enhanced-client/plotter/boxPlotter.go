@@ -26,15 +26,15 @@ func typedBoxPlots(settings Settings, objectType int, wg *sync.WaitGroup) {
 			switch objectType {
 			case ENDPOINTS:
 				plots[i][j], tmpMin, tmpMax = intXsizeBoxPlot(settings.MsgSizes[i], settings.Intervals[j], settings.Endpoints,
-					settings.ExecDir, settings.PercentilesToRemove)
+					settings.ExecDir, settings.PercentilesToRemove, requestedSlice(settings))
 				filename = "endpointsBoxPlot"
 			case INTERVALS:
 				plots[i][j], tmpMin, tmpMax = sizeXepBoxPlot(settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals,
-					settings.ExecDir, settings.PercentilesToRemove)
+					settings.ExecDir, settings.PercentilesToRemove, requestedSlice(settings))
 				filename = "intervalsBoxPlot"
 			case SIZES:
 				plots[i][j], tmpMin, tmpMax = intXepBoxPlot(settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes,
-					settings.ExecDir, settings.PercentilesToRemove)
+					settings.ExecDir, settings.PercentilesToRemove, requestedSlice(settings))
 				filename = "sizesBoxPlot"
 			default:
 				panic("Wrong objectType in loop elements: only values 0,1 and 2 are allowed")
@@ -63,13 +63,18 @@ func typedBoxPlots(settings Settings, objectType int, wg *sync.WaitGroup) {
 }
 
 // Return a boxplot of the e2e rtt of the sizes given the interval and the endpoint
-func intXepBoxPlot(ep EndpointData, si int, msgSizes []int, execdir string, percentilesToRemove int) (*plot.Plot, float64, float64) {
+func intXepBoxPlot(ep EndpointData,
+	si int,
+	msgSizes []int,
+	execdir string,
+	percentilesToRemove int,
+	requestedRuns []int) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for " + ep.Description + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	errMgmt(err)
 
 	// Open the desired files
-	openFiles := openDesiredFiles(execdir, "-"+ep.Destination+".i"+strconv.Itoa(si)+".x")
+	openFiles := openDesiredFiles(execdir, requestedRuns, "-"+ep.Destination+".i"+strconv.Itoa(si)+".x")
 
 	valuesMap := make(map[int]plotter.Values)
 
@@ -100,18 +105,24 @@ func intXepBoxPlot(ep EndpointData, si int, msgSizes []int, execdir string, perc
 }
 
 // Return a boxplot of the e2e rtt of the intervals given the size and the endpoint
-func sizeXepBoxPlot(ep EndpointData, msgSize int, sis []int, execdir string, percentilesToRemove int) (*plot.Plot, float64, float64) {
+func sizeXepBoxPlot(ep EndpointData,
+	msgSize int,
+	sis []int,
+	execdir string,
+	percentilesToRemove int,
+	requestedRuns []int) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for message size " + strconv.Itoa(msgSize) + " and endpoint " + ep.Description)
 	p, err := plot.New()
 	errMgmt(err)
 
 	// Open the desired files
-	openFiles := openDesiredFiles(execdir, "-"+ep.Destination+".i", ".x"+strconv.Itoa(msgSize)+".csv")
+	openFiles := openDesiredFiles(execdir, requestedRuns, "-"+ep.Destination+".i", ".x"+strconv.Itoa(msgSize)+".csv")
 
 	valuesMap := make(map[int]plotter.Values)
 
 	for _, f := range openFiles {
-		parsedInterVal, err := strconv.ParseInt(f.Name()[strings.LastIndex(f.Name(), ".i")+2:strings.LastIndex(f.Name(), ".x")], 10, 32)
+		parsedInterVal, err := strconv.ParseInt(
+			f.Name()[strings.LastIndex(f.Name(), ".i")+2:strings.LastIndex(f.Name(), ".x")], 10, 32)
 		interVal := int(parsedInterVal)
 		errMgmt(err)
 		if intInSlice(interVal, sis) {
@@ -141,13 +152,14 @@ func intXsizeBoxPlot(msgSize int,
 	si int,
 	eps []EndpointData,
 	execdir string,
-	percentilesToRemove int) (*plot.Plot, float64, float64) {
+	percentilesToRemove int,
+	requestedRuns []int) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
 
 	// Open the desired files
-	openFiles := openDesiredFiles(execdir, ".i"+strconv.Itoa(si)+".x"+strconv.Itoa(msgSize)+".csv")
+	openFiles := openDesiredFiles(execdir, requestedRuns, ".i"+strconv.Itoa(si)+".x"+strconv.Itoa(msgSize)+".csv")
 
 	valuesMap := make(map[string]plotter.Values)
 
