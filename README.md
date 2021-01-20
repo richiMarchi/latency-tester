@@ -168,18 +168,23 @@ ansible-playbook playbook.yml
 Here is an example of the input file:
 
 ```
+# Enhanced Client Settings
+
 # How many times to iterate
 runs: 24
 # Time interval between the start of two different runs (in minutes)
 runs_interval: 60
 # How much time each client execution should last (in seconds)
 runs_step_duration: 30
-# Iperf IP
-iperf_ip: "130.192.31.240"
-# Iperf Port
-iperf_port: "80"
-# Ping IP
-ping_ip: "130.192.31.254"
+# Iperf Destinations
+iperfs:
+- name: "Crownlabs"
+  ip: "130.192.31.240"
+  port: "80"
+# Ping Destinations
+ping_destinations:
+- name: "Crownlabs"
+  ip: "130.192.31.254"
 # Interval between ping executions (in seconds)
 ping_interval: 30
 # List of endpoints to test E2E latency, defined by its name/description and its address
@@ -208,6 +213,19 @@ response_size: 1024
 tls_enabled: "true"
 # Execution directory (if in Docker, this must coincide with the mapped directory)
 exec_dir: "/execdir/"
+
+# Plotting Settings
+
+# How many percentiles to remove from the extremities of the plots (default 0 if omitted)
+percentiles_to_remove: 1
+# The minimum value in the plot for the RTT (automatically obtained if omitted)
+#rtt_min: 10
+# The maximum value in the plot for the RTT (automatically obtained if omitted)
+# rtt_max: 20
+# The runs we selectively want to plot (default all runs if omitted)
+#runs_to_plot:
+#- 1
+#- 3
 ```
 
 ### Enhanced Client Output Examples
@@ -235,6 +253,10 @@ exec_dir: "/execdir/"
 - E2E latency plots
 
   ![alt text](images/e2e.png "E2E latency")
+
+- E2E latency hourly boxplots
+
+  ![alt text](images/e2e-box.png)
 
 - TCP ACK RTT plots
 
