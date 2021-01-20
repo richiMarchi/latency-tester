@@ -211,9 +211,9 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 									}
 									runGap = timeInter - lastOfRun
 									intTs, _ := strconv.ParseInt(row[0], 10, 64)
-									localTs := time.Unix(0, intTs).Local()
-									runTime = strconv.Itoa(run) + ") " + strconv.Itoa(localTs.Hour()) + ":" +
-										strconv.Itoa(localTs.Minute())
+									utcTs := time.Unix(0, intTs)
+									runTime = fmt.Sprintf("%02d", run) + ") " + strconv.Itoa(utcTs.Hour()) + ":" +
+										strconv.Itoa(utcTs.Minute())
 								}
 								// Convert values to ms
 								values = append(values, plotter.XY{X: (timeInter - absoluteFirst - runGap) / 1000000000, Y: parsed})
@@ -224,10 +224,23 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 							}
 						}
 					}
+					if run%12 == 0 || run == settings.Runs {
+						if (epIndex+interIndex+sizeIndex) != 0 || run > 12 {
+							hourlyPdfToSave.NextPage()
+						}
+						box, err := plot.New()
+						errMgmt(err)
+						box.X.Label.Text = "UTC Time (hh:mm)"
+						box.Y.Label.Text = "E2E RTT (ms)"
+						box.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
+						box.Title.Text = "E2E Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
+						boxplot, _, _ := generateStringBoxPlotAndLimits(box, &hourlyMap, settings.PercentilesToRemove)
+						boxplot.Draw(draw.New(hourlyPdfToSave))
+						hourlyMap = make(map[string]plotter.Values)
+					}
 				}
 				if (epIndex + interIndex + sizeIndex) != 0 {
 					pdfToSave.NextPage()
-					hourlyPdfToSave.NextPage()
 				}
 				// Standard Plot
 				p, err := plot.New()
@@ -248,16 +261,6 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 				})
 				err = plotutil.AddLines(p, "RTT", values)
 				p.Draw(draw.New(pdfToSave))
-
-				// Hourly plot
-				box, err := plot.New()
-				errMgmt(err)
-				box.X.Label.Text = "Time (hh:mm)"
-				box.Y.Label.Text = "E2E RTT (ms)"
-				box.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
-				box.Title.Text = "E2E Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
-				boxplot, _, _ := generateStringBoxPlotAndLimits(box, &hourlyMap, settings.PercentilesToRemove)
-				boxplot.Draw(draw.New(hourlyPdfToSave))
 			}
 		}
 	}
