@@ -6,10 +6,11 @@ runs: 24
 runs_interval: 60
 # How much time each client execution should last (in seconds)
 runs_step_duration: 30
-# Iperf IP
-iperf_ip: "130.192.31.240"
-# Iperf Port
-iperf_port: "80"
+# Iperf Destinations
+iperfs:
+- name: "Crownlabs"
+  ip: "130.192.31.240"
+  port: "80"
 # Ping IP
 ping_ip: "130.192.31.254"
 # Interval between ping executions (in seconds)

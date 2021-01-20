@@ -53,10 +53,7 @@ func commonPlotting(plots [][]*plot.Plot, rows int, cols int, cardWidth int, fil
 }
 
 // Return the name of a destination given the address
-func nameFromDest(dest string, eps *[]struct {
-	Description string `yaml:"description"`
-	Destination string `yaml:"destination"`
-}) (string, bool) {
+func nameFromDest(dest string, eps *[]EndpointData) (string, bool) {
 	for _, b := range *eps {
 		if b.Destination == dest {
 			return b.Description, true

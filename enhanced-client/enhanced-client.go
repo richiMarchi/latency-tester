@@ -13,23 +13,30 @@ import (
 	"time"
 )
 
+type IperfData struct {
+	Name string `yaml:"name"`
+	Ip   string `yaml:"ip"`
+	Port string `yaml:"port"`
+}
+
+type EndpointData struct {
+	Description string `yaml:"description"`
+	Destination string `yaml:"destination"`
+}
+
 type Settings struct {
-	Runs             int    `yaml:"runs"`
-	RunsInterval     int    `yaml:"runs_interval"`      // in minutes
-	RunsStepDuration int    `yaml:"runs_step_duration"` // in seconds
-	IperfIp          string `yaml:"iperf_ip"`
-	IperfPort        string `yaml:"iperf_port"`
-	PingIp           string `yaml:"ping_ip"`
-	PingInterval     int    `yaml:"ping_interval"` // in seconds
-	Endpoints        []struct {
-		Description string `yaml:"description"`
-		Destination string `yaml:"destination"`
-	} `yaml:"endpoints"`
-	Intervals    []int  `yaml:"intervals"`     // in milliseconds
-	MsgSizes     []int  `yaml:"msg_sizes"`     // in bytes
-	ResponseSize int    `yaml:"response_size"` // in bytes
-	TlsEnabled   string `yaml:"tls_enabled"`
-	ExecDir      string `yaml:"exec_dir"`
+	Runs              int            `yaml:"runs"`
+	RunsInterval      int            `yaml:"runs_interval"`      // in minutes
+	RunsStepDuration  int            `yaml:"runs_step_duration"` // in seconds
+	IperfDestinations []IperfData    `yaml:"iperf_data"`
+	PingIp            string         `yaml:"ping_ip"`
+	PingInterval      int            `yaml:"ping_interval"` // in seconds
+	Endpoints         []EndpointData `yaml:"endpoints"`
+	Intervals         []int          `yaml:"intervals"`     // in milliseconds
+	MsgSizes          []int          `yaml:"msg_sizes"`     // in bytes
+	ResponseSize      int            `yaml:"response_size"` // in bytes
+	TlsEnabled        string         `yaml:"tls_enabled"`
+	ExecDir           string         `yaml:"exec_dir"`
 }
 
 func main() {
@@ -44,9 +51,6 @@ func main() {
 	var settings Settings
 	err = yaml.Unmarshal(file, &settings)
 	errMgmt(err)
-	if settings.IperfPort == "" {
-		settings.IperfPort = "5201"
-	}
 
 	// Print flags statuses in order to be sure it is as expected
 	val, err := sysctl.Get("net.ipv4.tcp_slow_start_after_idle")
@@ -64,7 +68,12 @@ func main() {
 
 	for i := 1; i <= settings.Runs; i++ {
 		log.Println("Running Iperf...")
-		iperfer(i, settings.ExecDir, settings.IperfIp, settings.IperfPort)
+		for _, iperfData := range settings.IperfDestinations {
+			if iperfData.Port == "" {
+				iperfData.Port = "5201"
+			}
+			iperfer(i, settings.ExecDir, iperfData)
+		}
 		log.Println("Iperf complete!")
 		stopTcpdump := make(chan os.Signal, 1)
 		wg.Add(1)
@@ -109,12 +118,13 @@ func main() {
 	log.Println("Everything's complete!")
 }
 
-func iperfer(run int, execdir, ip, port string) {
-	iperfFile, err := os.Create(execdir + strconv.Itoa(run) + "-iperf_report.txt")
+func iperfer(run int, execdir string, iperfData IperfData) {
+	iperfFile, err := os.Create(execdir + strconv.Itoa(run) + "-iperf_" + iperfData.Name + ".txt")
 	errMgmt(err)
 	defer iperfFile.Close()
 
-	iperfRes, err := exec.Command("timeout", "10", "iperf3", "-c", ip, "-p", port, "-t", "5").Output()
+	iperfRes, err := exec.Command(
+		"timeout", "10", "iperf3", "-c", iperfData.Ip, "-p", iperfData.Port, "-t", "5").Output()
 	_, err = iperfFile.Write(iperfRes)
 	errMgmt(err)
 }

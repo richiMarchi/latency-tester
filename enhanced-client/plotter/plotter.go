@@ -9,26 +9,33 @@ import (
 	"syscall"
 )
 
+type IperfData struct {
+	Name string `yaml:"name"`
+	Ip   string `yaml:"ip"`
+	Port string `yaml:"port"`
+}
+
+type EndpointData struct {
+	Description string `yaml:"description"`
+	Destination string `yaml:"destination"`
+}
+
 type Settings struct {
-	Runs             int    `yaml:"runs"`
-	RunsInterval     int    `yaml:"runs_interval"`      // in minutes
-	RunsStepDuration int    `yaml:"runs_step_duration"` // in seconds
-	IperfIp          string `yaml:"iperf_ip"`
-	IperfPort        string `yaml:"iperf_port"`
-	PingIp           string `yaml:"ping_ip"`
-	PingInterval     int    `yaml:"ping_interval"` // in seconds
-	Endpoints        []struct {
-		Description string `yaml:"description"`
-		Destination string `yaml:"destination"`
-	} `yaml:"endpoints"`
-	Intervals           []int   `yaml:"intervals"`     // in milliseconds
-	MsgSizes            []int   `yaml:"msg_sizes"`     // in bytes
-	ResponseSize        int     `yaml:"response_size"` // in bytes
-	TlsEnabled          string  `yaml:"tls_enabled"`
-	ExecDir             string  `yaml:"exec_dir"`
-	PercentilesToRemove int     `yaml:"percentiles_to_remove"`
-	RttMin              float64 `yaml:"rtt_min"`
-	RttMax              float64 `yaml:"rtt_max"`
+	Runs                int            `yaml:"runs"`
+	RunsInterval        int            `yaml:"runs_interval"`      // in minutes
+	RunsStepDuration    int            `yaml:"runs_step_duration"` // in seconds
+	IperfDestinations   []IperfData    `yaml:"iperf_data"`
+	PingIp              string         `yaml:"ping_ip"`
+	PingInterval        int            `yaml:"ping_interval"` // in seconds
+	Endpoints           []EndpointData `yaml:"endpoints"`
+	Intervals           []int          `yaml:"intervals"`     // in milliseconds
+	MsgSizes            []int          `yaml:"msg_sizes"`     // in bytes
+	ResponseSize        int            `yaml:"response_size"` // in bytes
+	TlsEnabled          string         `yaml:"tls_enabled"`
+	ExecDir             string         `yaml:"exec_dir"`
+	PercentilesToRemove int            `yaml:"percentiles_to_remove"`
+	RttMin              float64        `yaml:"rtt_min"`
+	RttMax              float64        `yaml:"rtt_max"`
 }
 
 const (
@@ -52,9 +59,6 @@ func main() {
 	var settings Settings
 	err = yaml.Unmarshal(file, &settings)
 	errMgmt(err)
-	if settings.IperfPort == "" {
-		settings.IperfPort = "5201"
-	}
 
 	// Create the file in order that it can be totally handled by the host machine
 	syscall.Umask(0)

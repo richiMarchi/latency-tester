@@ -145,10 +145,11 @@ func sizeXepBoxPlot(ep struct {
 }
 
 // Return a boxplot of the e2e rtt of the endpoints given the interval and the size
-func intXsizeBoxPlot(msgSize int, si int, eps []struct {
-	Description string `yaml:"description"`
-	Destination string `yaml:"destination"`
-}, execdir string, percentilesToRemove int) (*plot.Plot, float64, float64) {
+func intXsizeBoxPlot(msgSize int,
+	si int,
+	eps []EndpointData,
+	execdir string,
+	percentilesToRemove int) (*plot.Plot, float64, float64) {
 	fmt.Println("Plot for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)

@@ -100,10 +100,7 @@ func intXepCDF(ep struct {
 }
 
 // Return a cdf of the e2e rtt of the intervals given the size and the endpoint
-func sizeXepCDF(ep struct {
-	Description string `yaml:"description"`
-	Destination string `yaml:"destination"`
-}, msgSize int, sis []int, execdir string, percentilesToRemove int) *plot.Plot {
+func sizeXepCDF(ep EndpointData, msgSize int, sis []int, execdir string, percentilesToRemove int) *plot.Plot {
 	fmt.Println("CDF for " + ep.Description + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
@@ -142,10 +139,7 @@ func sizeXepCDF(ep struct {
 }
 
 // Return a cdf of the e2e rtt of the endpoints given the interval and the size
-func intXsizeCDF(msgSize int, si int, eps []struct {
-	Description string `yaml:"description"`
-	Destination string `yaml:"destination"`
-}, execdir string, percentilesToRemove int) *plot.Plot {
+func intXsizeCDF(msgSize int, si int, eps []EndpointData, execdir string, percentilesToRemove int) *plot.Plot {
 	fmt.Println("CDF for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
