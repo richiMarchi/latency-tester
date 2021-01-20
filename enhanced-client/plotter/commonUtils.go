@@ -130,8 +130,8 @@ func openDesiredFiles(execdir string, nameLike ...string) []*os.File {
 	return openFiles
 }
 
-// Return a BoxPlot graph and its min and max values
-func generateBoxPlotAndLimits(p *plot.Plot,
+// Return a BoxPlot graph and its min and max values with int as key of the map
+func generateIntBoxPlotAndLimits(p *plot.Plot,
 	valuesMap *map[int]plotter.Values,
 	percentilesToRemove int) (*plot.Plot, float64, float64) {
 	// Get map ordered keys
@@ -160,6 +160,40 @@ func generateBoxPlotAndLimits(p *plot.Plot,
 		p.Add(boxplot)
 	}
 	p.NominalX(nominals...)
+	return p, floats.Min(mins), floats.Max(maxes)
+}
+
+// Return a BoxPlot graph and its min and max values with string as key of the map
+func generateStringBoxPlotAndLimits(p *plot.Plot,
+	valuesMap *map[string]plotter.Values,
+	percentilesToRemove int) (*plot.Plot, float64, float64) {
+	// Get map ordered keys
+	keys := make([]string, 0, len(*valuesMap))
+	for k := range *valuesMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var nominals []string
+	var mins []float64
+	var maxes []float64
+	w := vg.Points(100)
+	var position float64 = 0
+	for _, k := range keys {
+		// Remove the first three and last three percentiles in order to avoid unreadable plots
+		sort.Float64s((*valuesMap)[k])
+		toRemove := len((*valuesMap)[k]) / 100
+		(*valuesMap)[k] = (*valuesMap)[k][toRemove*percentilesToRemove : len((*valuesMap)[k])-toRemove*percentilesToRemove]
+		boxplot, err := plotter.NewBoxPlot(w, position, (*valuesMap)[k])
+		errMgmt(err)
+		nominals = append(nominals, k+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
+		mins = append(mins, boxplot.AdjLow)
+		maxes = append(maxes, boxplot.AdjHigh)
+		position += 1
+		p.Add(boxplot)
+	}
+	p.NominalX(nominals...)
+
 	return p, floats.Min(mins), floats.Max(maxes)
 }
 

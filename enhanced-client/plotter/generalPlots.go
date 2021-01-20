@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 func PingPlotter(settings Settings, wg *sync.WaitGroup) {
@@ -172,14 +173,21 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 	if err != nil {
 		panic(err)
 	}
+	hourlyPdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
+	hourly, err := os.Create(settings.ExecDir + PlotDirName + "e2eLatencyHourlyBoxplot.pdf")
+	if err != nil {
+		panic(err)
+	}
 
 	for epIndex, addr := range settings.Endpoints {
 		for interIndex, inter := range settings.Intervals {
 			for sizeIndex, size := range settings.MsgSizes {
 
 				var values plotter.XYs
+				hourlyMap := make(map[string]plotter.Values)
 				var absoluteFirst float64
 				var lastOfRun float64
+				var runTime string
 				for run := 1; run <= settings.Runs; run++ {
 					file, err := os.Open(settings.ExecDir +
 						strconv.Itoa(run) + "-" + addr.Destination + ".i" + strconv.Itoa(inter) + ".x" + strconv.Itoa(size) + ".csv")
@@ -202,9 +210,14 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 										lastOfRun = timeInter
 									}
 									runGap = timeInter - lastOfRun
+									intTs, _ := strconv.ParseInt(row[0], 10, 64)
+									localTs := time.Unix(0, intTs).Local()
+									runTime = strconv.Itoa(run) + ") " + strconv.Itoa(localTs.Hour()) + ":" +
+										strconv.Itoa(localTs.Minute())
 								}
 								// Convert values to ms
 								values = append(values, plotter.XY{X: (timeInter - absoluteFirst - runGap) / 1000000000, Y: parsed})
+								hourlyMap[runTime] = append(hourlyMap[runTime], parsed)
 								if i == len(records)-1 {
 									lastOfRun = timeInter - runGap
 								}
@@ -214,7 +227,9 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 				}
 				if (epIndex + interIndex + sizeIndex) != 0 {
 					pdfToSave.NextPage()
+					hourlyPdfToSave.NextPage()
 				}
+				// Standard Plot
 				p, err := plot.New()
 				errMgmt(err)
 				p.X.Label.Text = "Time (s)"
@@ -233,6 +248,16 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 				})
 				err = plotutil.AddLines(p, "RTT", values)
 				p.Draw(draw.New(pdfToSave))
+
+				// Hourly plot
+				box, err := plot.New()
+				errMgmt(err)
+				box.X.Label.Text = "Time (hh:mm)"
+				box.Y.Label.Text = "E2E RTT (ms)"
+				box.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
+				box.Title.Text = "E2E Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
+				boxplot, _, _ := generateStringBoxPlotAndLimits(box, &hourlyMap, settings.PercentilesToRemove)
+				boxplot.Draw(draw.New(hourlyPdfToSave))
 			}
 		}
 	}
@@ -240,6 +265,10 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 		panic(err)
 	}
 	w.Close()
+	if _, err := hourlyPdfToSave.WriteTo(hourly); err != nil {
+		panic(err)
+	}
+	hourly.Close()
 
 	wg.Done()
 }

@@ -7,9 +7,7 @@ import (
 	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/vg"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -98,7 +96,7 @@ func intXepBoxPlot(ep EndpointData, si int, msgSizes []int, execdir string, perc
 	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
-	return generateBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
+	return generateIntBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
 }
 
 // Return a boxplot of the e2e rtt of the intervals given the size and the endpoint
@@ -135,7 +133,7 @@ func sizeXepBoxPlot(ep EndpointData, msgSize int, sis []int, execdir string, per
 	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
 
-	return generateBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
+	return generateIntBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
 }
 
 // Return a boxplot of the e2e rtt of the endpoints given the interval and the size
@@ -175,32 +173,5 @@ func intXsizeBoxPlot(msgSize int,
 	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "KiB"
 
-	// Get map ordered keys
-	keys := make([]string, 0, len(valuesMap))
-	for k := range valuesMap {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	var nominals []string
-	var mins []float64
-	var maxes []float64
-	w := vg.Points(100)
-	var position float64 = 0
-	for _, k := range keys {
-		// Remove the first three and last three percentiles in order to avoid unreadable plots
-		sort.Float64s(valuesMap[k])
-		toRemove := len(valuesMap[k]) / 100
-		valuesMap[k] = valuesMap[k][toRemove*percentilesToRemove : len(valuesMap[k])-toRemove*percentilesToRemove]
-		boxplot, err := plotter.NewBoxPlot(w, position, valuesMap[k])
-		errMgmt(err)
-		nominals = append(nominals, k+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
-		mins = append(mins, boxplot.AdjLow)
-		maxes = append(maxes, boxplot.AdjHigh)
-		position += 1
-		p.Add(boxplot)
-	}
-	p.NominalX(nominals...)
-
-	return p, floats.Min(mins), floats.Max(maxes)
+	return generateStringBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
 }
