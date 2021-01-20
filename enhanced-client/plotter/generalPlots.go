@@ -225,8 +225,8 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 							}
 						}
 					}
-					if runIndex+1%12 == 0 || runIndex+1 == len(requestedRuns) {
-						if (epIndex+interIndex+sizeIndex) != 0 || runIndex+1 > 12 {
+					if (runIndex+1)%12 == 0 || (runIndex+1) == len(requestedRuns) {
+						if (epIndex+interIndex+sizeIndex) != 0 || (runIndex+1) > 12 {
 							hourlyPdfToSave.NextPage()
 						}
 						box, err := plot.New()
@@ -236,6 +236,12 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 						box.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 						box.Title.Text = "E2E Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
 						boxplot, _, _ := generateStringBoxPlotAndLimits(box, &hourlyMap, settings.PercentilesToRemove)
+						if settings.RttMin != 0 {
+							boxplot.Y.Min = settings.RttMin
+						}
+						if settings.RttMax != 0 {
+							boxplot.Y.Max = settings.RttMax
+						}
 						boxplot.Draw(draw.New(hourlyPdfToSave))
 						hourlyMap = make(map[string]plotter.Values)
 					}
@@ -261,6 +267,12 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 					return values[i].X < values[j].X
 				})
 				err = plotutil.AddLines(p, "RTT", values)
+				if settings.RttMin != 0 {
+					p.Y.Min = settings.RttMin
+				}
+				if settings.RttMax != 0 {
+					p.Y.Max = settings.RttMax
+				}
 				p.Draw(draw.New(pdfToSave))
 			}
 		}
