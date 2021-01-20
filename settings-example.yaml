@@ -1,3 +1,5 @@
+# Enhanced Client Settings
+
 # How many times to iterate
 runs: 24
 # Time interval between the start of two different runs (in minutes)
@@ -40,4 +42,10 @@ tls_enabled: "true"
 exec_dir: "/execdir/"
 
 # Plotting Settings
+
+# How many percentiles to remove from the extremities of the plots
 percentiles_to_remove: 3
+# The minimum value in the plot for the RTT
+rtt_min: 10
+# The maximum value in the plot for the RTT
+rtt_max: 20

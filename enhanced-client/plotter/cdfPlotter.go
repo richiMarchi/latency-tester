@@ -45,6 +45,12 @@ func typedCDFs(settings Settings, objectType int, wg *sync.WaitGroup) {
 		}
 	}
 
+	if settings.RttMin != 0 {
+		min = settings.RttMin
+	}
+	if settings.RttMax != 0 {
+		max = settings.RttMax
+	}
 	adjustMinMaxX(plots, rows, cols, min, max)
 	commonPlotting(plots, rows, cols, cols*500, settings.ExecDir+PlotDirName+filename)
 

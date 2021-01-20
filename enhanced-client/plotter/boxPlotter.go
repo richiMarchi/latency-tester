@@ -46,7 +46,19 @@ func typedBoxPlots(settings Settings, objectType int, wg *sync.WaitGroup) {
 		}
 	}
 
-	adjustMinMaxY(plots, rows, cols, min-1, max+3)
+	var standardMin float64
+	var standardMax float64
+	if settings.RttMin != 0 {
+		standardMin = settings.RttMin
+	} else {
+		standardMin = min - 1
+	}
+	if settings.RttMax != 0 {
+		standardMax = settings.RttMax
+	} else {
+		standardMax = max + 3
+	}
+	adjustMinMaxY(plots, rows, cols, standardMin, standardMax)
 	commonPlotting(plots, rows, cols, 100+cols*elems*200, settings.ExecDir+PlotDirName+filename)
 
 	wg.Done()
