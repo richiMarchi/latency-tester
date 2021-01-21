@@ -69,8 +69,9 @@ func main() {
 	stopPing := make(chan os.Signal, len(settings.PingDestinations))
 	var wg sync.WaitGroup
 	wg.Add(len(settings.PingDestinations))
+	killPing := false
 	for _, dest := range settings.PingDestinations {
-		go pingThread(&wg, settings.ExecDir, dest, settings.PingInterval, stopPing)
+		go pingThread(&wg, settings.ExecDir, dest, settings.PingInterval, stopPing, &killPing)
 	}
 
 	for i := 1; i <= settings.Runs; i++ {
@@ -104,6 +105,9 @@ func main() {
 			}
 		}
 		stopTcpdump <- os.Interrupt
+		for range settings.PingDestinations {
+			stopPing <- os.Interrupt
+		}
 		if i != settings.Runs {
 			elapsed := getTimestamp().Sub(startTime)
 			waitTime := time.Duration(settings.RunsInterval)*time.Minute - elapsed
@@ -115,6 +119,7 @@ func main() {
 		}
 	}
 
+	killPing = true
 	for range settings.PingDestinations {
 		stopPing <- os.Interrupt
 	}
@@ -138,23 +143,25 @@ func iperfer(run int, execdir string, iperfData IperfData) {
 	errMgmt(err)
 }
 
-func pingThread(wg *sync.WaitGroup, execdir string, destination PingData, interval int, c chan os.Signal) {
+func pingThread(wg *sync.WaitGroup, execdir string, destination PingData, interval int, c chan os.Signal, kill *bool) {
 	osRtt, err := os.Create(execdir + "ping_" + destination.Name + ".txt")
 	errMgmt(err)
 	defer osRtt.Close()
-	pingerCmd := exec.Command("ping", destination.Ip, "-i", strconv.Itoa(interval), "-D")
+	for !*kill {
+		pingerCmd := exec.Command("ping", destination.Ip, "-i", strconv.Itoa(interval), "-D")
 
-	// Handle stop
-	go func() {
-		for range c {
-			_ = pingerCmd.Process.Signal(os.Interrupt)
-		}
-	}()
+		// Handle stop
+		go func() {
+			for range c {
+				_ = pingerCmd.Process.Signal(os.Interrupt)
+			}
+		}()
 
-	pingOutput, err := pingerCmd.Output()
-	errMgmt(err)
-	_, err = osRtt.Write(pingOutput)
-	errMgmt(err)
+		pingOutput, err := pingerCmd.Output()
+		errMgmt(err)
+		_, err = osRtt.Write(pingOutput)
+		errMgmt(err)
+	}
 	wg.Done()
 }
 
