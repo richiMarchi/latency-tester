@@ -185,6 +185,7 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 			for sizeIndex, size := range settings.MsgSizes {
 
 				var values plotter.XYs
+				var runInterruptions []*hplot.VertLine
 				hourlyMap := make(map[string]plotter.Values)
 				var absoluteFirst float64
 				var lastOfRun float64
@@ -217,10 +218,15 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 										strconv.Itoa(utcTs.Minute())
 								}
 								// Convert values to ms
-								values = append(values, plotter.XY{X: (timeInter - absoluteFirst - runGap) / 1000000000, Y: parsed})
+								xValue := (timeInter - absoluteFirst - runGap) / 1000000000
+								values = append(values, plotter.XY{X: xValue, Y: parsed})
 								hourlyMap[runTime] = append(hourlyMap[runTime], parsed)
 								if i == len(records)-1 {
 									lastOfRun = timeInter - runGap
+									// Save X of last record of the run, to divide all with a vertical line in the plot
+									if (runIndex + 1) != len(requestedRuns) {
+										runInterruptions = append(runInterruptions, hplot.VLine(xValue, nil, nil))
+									}
 								}
 							}
 						}
@@ -267,6 +273,9 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 					return values[i].X < values[j].X
 				})
 				err = plotutil.AddLines(p, "RTT", values)
+				for _, line := range runInterruptions {
+					p.Add(line)
+				}
 				if settings.RttMin != 0 {
 					p.Y.Min = settings.RttMin
 				}
