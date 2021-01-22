@@ -214,8 +214,8 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 									runGap = timeInter - lastOfRun
 									intTs, _ := strconv.ParseInt(row[0], 10, 64)
 									utcTs := time.Unix(0, intTs)
-									runTime = fmt.Sprintf("%02d", run) + ") " + strconv.Itoa(utcTs.Hour()) + ":" +
-										strconv.Itoa(utcTs.Minute())
+									runTime = fmt.Sprintf("%02d", run) + ") " + fmt.Sprintf("%02d", utcTs.Hour()) + ":" +
+										fmt.Sprintf("%02d", utcTs.Minute())
 								}
 								// Convert values to ms
 								xValue := (timeInter - absoluteFirst - runGap) / 1000000000
