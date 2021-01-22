@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"github.com/lorenzosaino/go-sysctl"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
@@ -49,6 +51,9 @@ func main() {
 	if len(os.Args) == 1 {
 		log.Fatal("Settings filename requested")
 	}
+
+	stopHealthChecker := make(chan os.Signal, 1)
+	go runHealthChecker(stopHealthChecker)
 
 	// Settings parsing
 	file, err := ioutil.ReadFile(os.Args[1])
@@ -130,6 +135,24 @@ func main() {
 	err = exec.Command("./plotter", os.Args[1]).Run()
 	errMgmt(err)
 	log.Println("Everything's complete!")
+
+	stopHealthChecker <- os.Interrupt
+}
+
+func runHealthChecker(c chan os.Signal) {
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { return })
+	server := http.Server{Addr: "0.0.0.0:8080"}
+
+	// Handle stop
+	go func() {
+		for range c {
+			_ = server.Shutdown(context.TODO())
+		}
+	}()
+
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatalf("ListenAndServe(): %v", err)
+	}
 }
 
 func iperfer(run int, execdir string, iperfData IperfData) {

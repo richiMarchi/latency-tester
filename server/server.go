@@ -18,6 +18,7 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 	http.HandleFunc("/echo", echo)
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { return })
 	log.Println("Listening to", *addr, "\nTLS enabled:", *tls)
 	if *tls {
 		log.Fatal(http.ListenAndServeTLS(*addr, "server.crt", "server.key", nil))
