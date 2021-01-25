@@ -174,7 +174,7 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 		panic(err)
 	}
 	hourlyPdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
-	hourly, err := os.Create(settings.ExecDir + PlotDirName + "e2eLatencyHourlyBoxplot.pdf")
+	hourly, err := os.Create(settings.ExecDir + PlotDirName + "e2eLatencyPerRunBoxplot.pdf")
 	if err != nil {
 		panic(err)
 	}

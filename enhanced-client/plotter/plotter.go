@@ -72,7 +72,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	wg.Add(8 + len(requestedSlice(settings)))
+	wg.Add(7 + len(requestedSlice(settings)))
 	for _, run := range requestedSlice(settings) {
 		go TcpdumpPlotter(settings, run, &wg)
 	}
@@ -82,7 +82,10 @@ func main() {
 	go typedCDFs(settings, SIZES, &wg)
 	go typedCDFs(settings, INTERVALS, &wg)
 	go typedCDFs(settings, ENDPOINTS, &wg)
-	go PingPlotter(settings, &wg)
+	if len(settings.PingDestinations) > 0 {
+		wg.Add(1)
+		go PingPlotter(settings, &wg)
+	}
 	// Generates 2 pdfs, standard and boxplots
 	go RttPlotter(settings, &wg)
 	wg.Wait()
