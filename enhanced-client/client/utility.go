@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 	"unsafe"
 )
@@ -32,11 +33,17 @@ const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func connect() *websocket.Conn {
+	addrParts := strings.Split(address, "/")
+	pathString := ""
+	for _, part := range addrParts[1:] {
+		pathString += "/" + part
+	}
 	var conn *websocket.Conn
 	if *https {
 		conf := &tls.Config{InsecureSkipVerify: true}
 		dialer := websocket.Dialer{TLSClientConfig: conf, HandshakeTimeout: 10 * time.Second}
-		u := url.URL{Scheme: "wss", Host: address, Path: "/echo"}
+		u := url.URL{Scheme: "wss", Host: addrParts[0], Path: pathString + "/echo"}
+		log.Println(u.String())
 		c, _, err := dialer.Dial(u.String(), nil)
 		if err != nil {
 			log.Fatal("dial: ", err)
@@ -44,7 +51,7 @@ func connect() *websocket.Conn {
 		conn = c
 	} else {
 		dialer := websocket.Dialer{HandshakeTimeout: 10 * time.Second}
-		u := url.URL{Scheme: "ws", Host: address, Path: "/echo"}
+		u := url.URL{Scheme: "ws", Host: addrParts[0], Path: "/echo"}
 		c, _, err := dialer.Dial(u.String(), nil)
 		if err != nil {
 			log.Fatal("dial: ", err)
