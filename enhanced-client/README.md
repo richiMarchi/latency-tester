@@ -39,6 +39,11 @@ Latest version: `1.0.0`
 
 Here is an example of the input file:
 
+Legend:
+
+- `run` = The execution of all the combinations together
+- `step` = The execution of a single combination
+
 ```
 # Enhanced Client Settings
 
@@ -120,7 +125,8 @@ ansible-playbook playbook.yml
   [Example File](../examples/1-130.192.31.242:8080.i250.x1024.csv)
 
   File reporting the application-level latency between the client and the server, keeping also trace of the timestamps
-  of both hosts.
+  of both hosts. The client timestamp is the sending one, whereas the receiving one is used to calculate the round trip
+  time.
 
   ```
   #client-send-timestamp,server-timestamp,e2e-rtt
@@ -135,7 +141,8 @@ ansible-playbook playbook.yml
 
   [Example File](../examples/1-iperf_Crownlabs.txt)
 
-  File reporting the output of the `iperf3` command from the client to the designated iperf3 server.
+  File reporting the output of the `iperf3` command from the client to the designated iperf3 server. The field we want
+  to have a look at is the `Bitrate` one, so that we know the average bandwidth at the moment of the measurement.
 
   ```
   Connecting to host 130.192.31.240, port 80
@@ -158,7 +165,9 @@ ansible-playbook playbook.yml
 
   [Example File](../examples/ping_Crownlabs.txt)
 
-  File containing the output of the `ping` command.
+  File containing the output of the `ping` command. The first field of the ping record is the timestamp of the received
+  frame, in order to keep track of the ping latency throughout the whole execution, whereas the delay is represented by
+  the `time` field at the end of each line.
 
   ```
   PING 130.192.31.254 (130.192.31.254) 56(84) bytes of data.
@@ -183,8 +192,8 @@ ansible-playbook playbook.yml
 
   [Example File](../examples/1-tcpdump_report.csv)
 
-  File containing the timestamp of the ack frame, the round trip time between the packet and its ack and the stream id
-  in order to be able to distinguish the settings of a certain stream.
+  File containing the timestamp of the frame acking the one which the rtt is counted from, the round trip time between
+  these two packets and the stream id in order to be able to distinguish the parameters combination of a certain stream.
 
   ```
   #frame-timestamp,tcp-ack-rtt,tcp-stream-id
