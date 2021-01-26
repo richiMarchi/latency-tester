@@ -105,7 +105,10 @@ func main() {
 						"-requestPayload="+strconv.Itoa(size), "-responsePayload="+strconv.Itoa(settings.ResponseSize),
 						"-tls="+settings.TlsEnabled, "-log="+strconv.Itoa(i)+"-"+addr.Destination+".i"+strconv.Itoa(inter)+".x"+
 							strconv.Itoa(size), addr.Destination).Run()
-					errMgmt(err)
+					if err != nil {
+						log.Print("ERROR: ")
+						log.Println(err)
+					}
 				}
 			}
 		}
