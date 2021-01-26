@@ -43,6 +43,9 @@ runs_to_plot:
 - 3
 ```
 
+*N.B.: The destinations are ordered by string characters, so if you want to see them plotted in a certain order, it is
+recommended to add a letter or a number in an ordered way*
+
 ## Plotter Output Examples
 
 - BoxPlot

@@ -35,7 +35,7 @@ type Settings struct {
 	Runs              int            `yaml:"runs"`
 	RunsInterval      int            `yaml:"runs_interval"`      // in minutes
 	RunsStepDuration  int            `yaml:"runs_step_duration"` // in seconds
-	IperfDestinations []IperfData    `yaml:"iperf_data"`
+	IperfDestinations []IperfData    `yaml:"iperf_destinations"`
 	PingDestinations  []PingData     `yaml:"ping_destinations"`
 	PingInterval      int            `yaml:"ping_interval"` // in seconds
 	Endpoints         []EndpointData `yaml:"endpoints"`
@@ -80,14 +80,14 @@ func main() {
 	}
 
 	for i := 1; i <= settings.Runs; i++ {
-		log.Println("Running Iperf...")
 		for _, iperfData := range settings.IperfDestinations {
 			if iperfData.Port == "" {
 				iperfData.Port = "5201"
 			}
+			log.Println("Running Iperf towards", iperfData.Name+"...")
 			iperfer(i, settings.ExecDir, iperfData)
+			log.Println("Iperf towards", iperfData.Name, "complete!")
 		}
-		log.Println("Iperf complete!")
 		stopTcpdump := make(chan os.Signal, 1)
 		wg.Add(1)
 		localIp := getOutboundIP()
