@@ -92,6 +92,11 @@ tls_enabled: "true"
 exec_dir: "/execdir/"
 ```
 
+In this example, there are 2 (endpoints) x 6 (intervals) x 4 (sizes) = 48 combinations. Each combination is a step of a
+run. Each steps lasts 30 seconds, therefore the duration of all the combination in a single run is 24 minutes. Between
+the start of a run and the next one, there are 60 minutes, then the complete duration of all the 24 runs is 24 hours.
+
+
 ## Enhanced Client Ansible Deployment
 
 It is possible to deploy the enhanced client on more than one host with the provided ansible playbook.
