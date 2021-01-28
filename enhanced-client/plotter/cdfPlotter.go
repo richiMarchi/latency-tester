@@ -141,7 +141,7 @@ func sizeXepCDF(
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
-	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "KiB"
+	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "B"
 
 	generateCDFPlot(p, &valuesMap, percentilesToRemove)
 
@@ -184,7 +184,7 @@ func intXsizeCDF(
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
-	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "KiB"
+	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "B"
 
 	// Get map ordered keys
 	keys := make([]string, 0, len(valuesMap))

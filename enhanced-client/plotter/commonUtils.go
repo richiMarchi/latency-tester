@@ -260,7 +260,7 @@ func getTcpPlotTitle(settings Settings, streamCounter int) string {
 			break
 		}
 	}
-	panic("Cannot assign the title to the plot, buggy code!")
+	return "Unavailable at the moment"
 }
 
 func requestedSlice(settings Settings) []int {

@@ -9,10 +9,8 @@ import (
 	"sync"
 )
 
-const LogPath = "/execdir/"
-
 var reps = flag.Uint64("reps", 0, "number of repetitions")
-var logFile = flag.String("log", "log", "file to store latency numbers")
+var logFile = flag.String("log", "/execdir/log", "file to store latency numbers")
 var requestBytes = flag.Uint64("requestPayload", 64, "bytes of the payload")
 var responseBytes = flag.Uint64("responsePayload", 64, "bytes of the response payload")
 var interval = flag.Uint64("interval", 1000, "send interval time (ms)")
@@ -44,7 +42,7 @@ func main() {
 	defer conn.Close()
 
 	// File creation
-	toolRtt, toolFileErr := os.Create(LogPath + "" + *logFile + ".csv")
+	toolRtt, toolFileErr := os.Create(*logFile + ".csv")
 	if toolFileErr != nil {
 		log.Fatalf("failed creating file: %s", toolFileErr)
 	}
@@ -52,7 +50,7 @@ func main() {
 	defer toolRtt.Close()
 
 	if *tracerouteIp != "" {
-		tracerouteFile, tracerouteFileErr := os.Create(LogPath + "traceroute_" + *logFile)
+		tracerouteFile, tracerouteFileErr := os.Create(*logFile + "_traceroute")
 		if tracerouteFileErr != nil {
 			log.Fatalf("failed creating file: %s", tracerouteFileErr)
 		}
@@ -77,7 +75,7 @@ func main() {
 
 	// If explicitly requested tcp stats handlers
 	if *sockOpt {
-		tcpStats, tcpStatsFileErr := os.Create(LogPath + "tcp-stats_" + *logFile + ".csv")
+		tcpStats, tcpStatsFileErr := os.Create(*logFile + "_tcp-stats.csv")
 		if tcpStatsFileErr != nil {
 			log.Fatalf("failed creating file: %s", tcpStatsFileErr)
 		}

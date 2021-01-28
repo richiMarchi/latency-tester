@@ -125,8 +125,8 @@ func main() {
 						"Msg: " + strconv.Itoa(size))
 					err = exec.Command("./client", "-reps="+strconv.Itoa(repetitions), "-interval="+strconv.Itoa(inter),
 						"-requestPayload="+strconv.Itoa(size), "-responsePayload="+strconv.Itoa(settings.ResponseSize),
-						"-tls="+settings.TlsEnabled, "-log="+strconv.Itoa(i)+"-"+addr.Destination+".i"+strconv.Itoa(inter)+".x"+
-							strconv.Itoa(size), addr.Destination).Run()
+						"-tls="+settings.TlsEnabled, "-log="+settings.ExecDir+strconv.Itoa(i)+"-"+addr.Destination+
+							".i"+strconv.Itoa(inter)+".x"+strconv.Itoa(size), addr.Destination).Run()
 					if err != nil {
 						log.Print("ERROR: ")
 						log.Println(err)
