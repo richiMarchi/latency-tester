@@ -137,8 +137,8 @@ func main() {
 
 	// Plotting
 	log.Println("Plotting...")
-	err = exec.Command("./plotter", os.Args[1]).Run()
-	errMgmt(err)
+	output, err := exec.Command("./plotter", os.Args[1]).Output()
+	log.Println(string(output))
 	log.Println("Everything's complete!")
 
 	stopHealthChecker <- os.Interrupt

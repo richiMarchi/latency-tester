@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"sync"
-	"syscall"
 )
 
 type IperfData struct {
@@ -67,7 +66,6 @@ func main() {
 	errMgmt(err)
 
 	// Create the file in order that it can be totally handled by the host machine
-	syscall.Umask(0)
 	_ = os.Mkdir(settings.ExecDir+PlotDirName, os.ModePerm)
 
 	readme, err := os.Create(settings.ExecDir + PlotDirName + "README.txt")
