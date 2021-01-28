@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/lorenzosaino/go-sysctl"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -63,12 +62,12 @@ func main() {
 	errMgmt(err)
 
 	// Print flags statuses in order to be sure it is as expected
-	val, err := sysctl.Get("net.ipv4.tcp_slow_start_after_idle")
-	errMgmt(err)
-	log.Println("TCP slow start after idle value: ", val)
-	val, err = sysctl.Get("net.ipv4.tcp_congestion_control")
-	errMgmt(err)
-	log.Println("TCP congestion control algorithm: ", val)
+	//val, err := sysctl.Get("net.ipv4.tcp_slow_start_after_idle")
+	//errMgmt(err)
+	//log.Println("TCP slow start after idle value: ", val)
+	//val, err = sysctl.Get("net.ipv4.tcp_congestion_control")
+	//errMgmt(err)
+	//log.Println("TCP congestion control algorithm: ", val)
 
 	// Start ping and tcpdump in background
 	stopPing := make(chan os.Signal, len(settings.PingDestinations))
