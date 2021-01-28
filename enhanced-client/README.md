@@ -55,21 +55,21 @@ runs_interval: 60
 runs_step_duration: 30
 # Iperf Destinations
 iperf_destinations:
-- name: "Crownlabs"
-  ip: "130.192.31.240"
+- name: "Deployed-Iperf3-Server"
+  ip: "34.56.78.90"
   port: "80"
 # Ping Destinations
 ping_destinations:
-- name: "Crownlabs"
-  ip: "130.192.31.254"
+- name: "Pingable-Host"
+  ip: "23.45.67.89"
 # Interval between ping executions (in seconds)
 ping_interval: 30
 # List of endpoints to test E2E latency, defined by its name/description and its address
 endpoints:
-- description: "LB-4"
-  destination: "130.192.31.242:8080"
-- description: "LB-7"
-  destination: "latency-tester.crownlabs.polito.it"
+- description: "1_Example-Address"
+  destination: "12.34.56.67:8080"
+- description: "2_Example-Hostname"
+  destination: "latency-tester.example.com"
 # List of intervals between the send of two messages to test E2E latency
 intervals:
 - 10
