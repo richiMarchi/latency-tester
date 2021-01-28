@@ -6,6 +6,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -61,6 +62,25 @@ func main() {
 	var settings Settings
 	err = yaml.Unmarshal(file, &settings)
 	errMgmt(err)
+
+	if settings.RunsStepDuration == 0 && settings.RunsInterval == 0 {
+		log.Fatal("One between runs_step_duration and runs_interval must be set")
+	}
+	combinations := len(settings.Endpoints) * len(settings.Intervals) * len(settings.MsgSizes)
+	if settings.RunsStepDuration == 0 {
+		settings.RunsStepDuration = settings.RunsInterval * 60 / combinations
+		log.Println("Warning: runs_step_duration not set, the value will be", settings.RunsStepDuration)
+	}
+	if settings.RunsInterval == 0 {
+		settings.RunsInterval = int(math.Ceil(float64(settings.RunsStepDuration*combinations) / 60))
+		log.Println("Warning: runs_interval not set, the value will be", settings.RunsInterval)
+	}
+	avgSleep := float64(settings.RunsInterval*60-combinations*settings.RunsStepDuration) / 60
+	if avgSleep < 0 {
+		log.Println("Warning: the runs will be out of phase, not enough time to complete a run")
+	} else {
+		log.Println("Average sleep minutes between end and start of consecutive runs:", math.Round(avgSleep))
+	}
 
 	// Print flags statuses in order to be sure it is as expected
 	ss, ssErr := sysctl.Get("net.ipv4.tcp_slow_start_after_idle")

@@ -4,6 +4,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"sync"
 )
@@ -64,6 +65,17 @@ func main() {
 	var settings Settings
 	err = yaml.Unmarshal(file, &settings)
 	errMgmt(err)
+
+	if settings.RunsStepDuration == 0 && settings.RunsInterval == 0 {
+		log.Fatal("One between runs_step_duration and runs_interval must be set")
+	}
+	combinations := len(settings.Endpoints) * len(settings.Intervals) * len(settings.MsgSizes)
+	if settings.RunsStepDuration == 0 {
+		settings.RunsStepDuration = settings.RunsInterval * 60 / combinations
+	}
+	if settings.RunsInterval == 0 {
+		settings.RunsInterval = int(math.Ceil(float64(settings.RunsStepDuration*combinations) / 60))
+	}
 
 	// Create the file in order that it can be totally handled by the host machine
 	_ = os.Mkdir(settings.ExecDir+PlotDirName, os.ModePerm)
