@@ -56,7 +56,9 @@ func typedBoxPlots(settings Settings, objectType int, wg *sync.WaitGroup) {
 	} else {
 		standardMax = max + 3
 	}
-	adjustMinMaxY(plots, rows, cols, standardMin, standardMax)
+	if !settings.EqualizationDisabled {
+		adjustMinMaxY(plots, rows, cols, standardMin, standardMax)
+	}
 	commonPlotting(plots, rows, cols, 100+cols*elems*200, settings.ExecDir+PlotDirName+filename)
 
 	wg.Done()

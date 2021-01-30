@@ -26,22 +26,23 @@ type EndpointData struct {
 }
 
 type Settings struct {
-	Runs                int            `yaml:"runs"`
-	RunsInterval        int            `yaml:"runs_interval"`      // in minutes
-	RunsStepDuration    int            `yaml:"runs_step_duration"` // in seconds
-	IperfDestinations   []IperfData    `yaml:"iperf_destinations"`
-	PingDestinations    []PingData     `yaml:"ping_destinations"`
-	PingInterval        int            `yaml:"ping_interval"` // in seconds
-	Endpoints           []EndpointData `yaml:"endpoints"`
-	Intervals           []int          `yaml:"intervals"`     // in milliseconds
-	MsgSizes            []int          `yaml:"msg_sizes"`     // in bytes
-	ResponseSize        int            `yaml:"response_size"` // in bytes
-	TlsEnabled          string         `yaml:"tls_enabled"`
-	ExecDir             string         `yaml:"exec_dir"`
-	PercentilesToRemove int            `yaml:"percentiles_to_remove"`
-	RttMin              float64        `yaml:"rtt_min"`
-	RttMax              float64        `yaml:"rtt_max"`
-	RunsToPlot          []int          `yaml:"runs_to_plot"`
+	Runs                 int            `yaml:"runs"`
+	RunsInterval         int            `yaml:"runs_interval"`      // in minutes
+	RunsStepDuration     int            `yaml:"runs_step_duration"` // in seconds
+	IperfDestinations    []IperfData    `yaml:"iperf_destinations"`
+	PingDestinations     []PingData     `yaml:"ping_destinations"`
+	PingInterval         int            `yaml:"ping_interval"` // in seconds
+	Endpoints            []EndpointData `yaml:"endpoints"`
+	Intervals            []int          `yaml:"intervals"`     // in milliseconds
+	MsgSizes             []int          `yaml:"msg_sizes"`     // in bytes
+	ResponseSize         int            `yaml:"response_size"` // in bytes
+	TlsEnabled           string         `yaml:"tls_enabled"`
+	ExecDir              string         `yaml:"exec_dir"`
+	PercentilesToRemove  int            `yaml:"percentiles_to_remove"`
+	EqualizationDisabled bool           `yaml:"equalization_disabled"`
+	RttMin               float64        `yaml:"rtt_min"`
+	RttMax               float64        `yaml:"rtt_max"`
+	RunsToPlot           []int          `yaml:"runs_to_plot"`
 }
 
 const (
@@ -51,7 +52,7 @@ const (
 )
 
 const AxisTicks = 15
-const PlotDirName = "/plots/"
+const PlotDirName = "plots/"
 
 func main() {
 
