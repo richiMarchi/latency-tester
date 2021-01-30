@@ -92,12 +92,18 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 	// Open the desired file
 	file, err := os.Open(settings.ExecDir + strconv.Itoa(run) + "-tcpdump_report.csv")
 	errMgmt(err)
+	params, err := os.Open(settings.ExecDir + "parameters.txt")
+	errMgmt(err)
 
 	var values plotter.XYs
 	var firstTs float64
 	var previousStream int
 	streamCounter := 0
 	// Read the file as CSV and remove the headers line
+	parameters, _ := csv.NewReader(params).ReadAll()
+	endpoints := parameters[0]
+	intervals := parameters[1]
+	sizes := parameters[2]
 	records, _ := csv.NewReader(file).ReadAll()
 	records = records[1:]
 
@@ -133,7 +139,7 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 			p.Y.Label.Text = "TCP RTT (ms)"
 			p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 			p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
-			p.Title.Text = getTcpPlotTitle(settings, streamCounter)
+			p.Title.Text = getTcpPlotTitle(endpoints, intervals, sizes, streamCounter)
 			// Remove the last 3 percentiles
 			sort.Slice(values, func(i, j int) bool {
 				return values[i].Y < values[j].Y

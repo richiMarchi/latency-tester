@@ -48,6 +48,8 @@ exec_dir: "/execdir/"
 
 # How many percentiles to remove from the extremities of the plots (default 0 if omitted)
 percentiles_to_remove: 1
+# If false, BoxPlot and CDF have the same scale
+#equalization_disabled: true
 # The minimum value in the plot for the RTT (automatically obtained if omitted)
 #rtt_min: 10
 # The maximum value in the plot for the RTT (automatically obtained if omitted)

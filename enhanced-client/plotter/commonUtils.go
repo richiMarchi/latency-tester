@@ -239,13 +239,13 @@ func getLoopElems(settings Settings, objectType int) (int, int, int) {
 }
 
 // Return the title to assign to the plot depending on the stream
-func getTcpPlotTitle(settings Settings, streamCounter int) string {
+func getTcpPlotTitle(endpoints, intervals, sizes []string, streamCounter int) string {
 	tracker := 0
-	for _, addr := range settings.Endpoints {
-		for _, inter := range settings.Intervals {
-			for _, size := range settings.MsgSizes {
+	for _, addr := range endpoints {
+		for _, inter := range intervals {
+			for _, size := range sizes {
 				if tracker == streamCounter {
-					return "TCP ACK Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
+					return "TCP ACK Latency: " + addr + " - " + inter + "ms - " + size + "B"
 				}
 				tracker += 1
 				if tracker > streamCounter {

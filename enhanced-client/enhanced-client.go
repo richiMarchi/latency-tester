@@ -92,6 +92,8 @@ func main() {
 		log.Println("TCP congestion control algorithm: ", cc)
 	}
 
+	generateParamsFile(settings)
+
 	// Start ping and tcpdump in background
 	stopPing := make(chan os.Signal, len(settings.PingDestinations))
 	var wg sync.WaitGroup
@@ -162,6 +164,37 @@ func main() {
 	log.Println("Everything's complete!")
 
 	stopHealthChecker <- os.Interrupt
+}
+
+func generateParamsFile(settings Settings) {
+	paramsFile, err := os.Create(settings.ExecDir + "parameters.txt")
+	errMgmt(err)
+	defer paramsFile.Close()
+
+	destinations := ""
+	for i, dest := range settings.Endpoints {
+		if i != 0 {
+			destinations += ","
+		}
+		destinations += dest.Description
+	}
+	paramsFile.WriteString(destinations + "\n")
+	intervals := ""
+	for i, inter := range settings.Intervals {
+		if i != 0 {
+			intervals += ","
+		}
+		intervals += strconv.Itoa(inter)
+	}
+	paramsFile.WriteString(intervals + "\n")
+	sizes := ""
+	for i, size := range settings.MsgSizes {
+		if i != 0 {
+			sizes += ","
+		}
+		sizes += strconv.Itoa(size)
+	}
+	paramsFile.WriteString(sizes)
 }
 
 func runHealthChecker(c chan os.Signal) {
