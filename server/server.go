@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
-	"strconv"
 )
 
 var addr = flag.String("addr", "0.0.0.0:8080", "http service address")
@@ -33,16 +32,6 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		log.Print("upgrade: ", err)
 		return
 	}
-	_, msg, resErr := c.ReadMessage()
-	if resErr != nil {
-		log.Println("read: ", resErr)
-		return
-	}
-	responseBytes, _ := strconv.Atoi(string(msg))
-
-	payload := randomString(uint(responseBytes) - 62 /* offset to set the perfect desired message size */)
-
-	printLogs(c.RemoteAddr(), responseBytes)
 
 	defer c.Close()
 	for {
@@ -55,7 +44,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		var jsonMap DataJSON
 		_ = json.Unmarshal(message, &jsonMap)
 		jsonMap.ServerTimestamp = getTimestamp()
-		jsonMap.Payload = payload
+		jsonMap.Payload = randomString(uint(jsonMap.ResponseSize) - 62 /* offset to set the perfect desired message size */)
 		message, _ = json.Marshal(jsonMap)
 		err = c.WriteMessage(mt, message)
 		log.Printf("recv: ACK")

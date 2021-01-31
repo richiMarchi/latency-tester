@@ -5,20 +5,20 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"os"
+	"sync"
 	"time"
 )
 
 func requestSender(
-	c *websocket.Conn,
 	interrupt chan os.Signal,
-	ssReading *bool,
-	reset chan *websocket.Conn,
-	msgId *uint64) {
+	msgId *uint64,
+	toolRtt *os.File) {
 	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
 	// If *reps == 0 then loop infinitely, otherwise loop *reps times
 	if *reps != 0 {
 		*reps += 1
 	}
+	var readersWg sync.WaitGroup
 	for *msgId = 1; *msgId != *reps; *msgId++ {
 		tmp := getTimestamp()
 		jsonMap := DataJSON{
@@ -26,20 +26,21 @@ func requestSender(
 			Payload:         payload,
 			ClientTimestamp: tmp,
 			ServerTimestamp: time.Time{},
+			ResponseSize:    *responseBytes,
 		}
+		c := connect()
+		// Parallel read dispatcher
+		readersWg.Add(1)
+		go readDispatcher(c, &readersWg, toolRtt)
 		marshal, _ := json.Marshal(jsonMap)
 		err := c.WriteMessage(websocket.TextMessage, marshal)
-		for err != nil {
-			log.Printf("Trying to reset connection...")
-			c = connect()
-			reset <- c
-			if *sockOpt {
-				reset <- c
-			}
-			jsonMap.Id = 0
-			jsonMap.Payload = "Connection Reset"
-			resetMarshal, _ := json.Marshal(jsonMap)
-			err = c.WriteMessage(websocket.TextMessage, resetMarshal)
+		err = c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+		if err != nil {
+			log.Println("write close: ", err)
+			return
+		}
+		if err != nil {
+			log.Printf("Error sending message %d", msgId)
 		}
 		tsDiff := (time.Duration(*interval) * time.Millisecond) - time.Duration(getTimestamp().Sub(tmp).Nanoseconds())
 		if tsDiff < 0 {
@@ -49,20 +50,9 @@ func requestSender(
 		select {
 		case <-interrupt:
 			log.Println("interrupt")
-			*ssReading = false
-			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			if err != nil {
-				log.Println("write close: ", err)
-				return
-			}
 			return
 		case <-time.After(tsDiff):
 		}
 	}
-	*ssReading = false
-	err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-	if err != nil {
-		log.Println("write close: ", err)
-		return
-	}
+	readersWg.Wait()
 }

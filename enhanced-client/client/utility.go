@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 	"unsafe"
@@ -20,6 +19,7 @@ type DataJSON struct {
 	ClientTimestamp time.Time
 	ServerTimestamp time.Time
 	Payload         string
+	ResponseSize    uint64
 }
 
 type TimedTCPInfo struct {
@@ -43,7 +43,6 @@ func connect() *websocket.Conn {
 		conf := &tls.Config{InsecureSkipVerify: true}
 		dialer := websocket.Dialer{TLSClientConfig: conf, HandshakeTimeout: 10 * time.Second}
 		u := url.URL{Scheme: "wss", Host: addrParts[0], Path: pathString + "/echo"}
-		log.Println(u.String())
 		c, _, err := dialer.Dial(u.String(), nil)
 		if err != nil {
 			log.Fatal("dial: ", err)
@@ -58,7 +57,6 @@ func connect() *websocket.Conn {
 		}
 		conn = c
 	}
-	_ = conn.WriteMessage(websocket.TextMessage, []byte(strconv.FormatUint(*responseBytes, 10)))
 	return conn
 }
 
@@ -85,7 +83,6 @@ func printLogs() {
 	log.Println("Send Interval:\t\t", *interval)
 	log.Println("TLS enabled:\t\t", *https)
 	log.Println("Traceroute IP:\t", *tracerouteIp)
-	log.Println("TCP Stats enabled:\t", *sockOpt)
 	log.Println("Address:\t\t", address)
 	log.Println()
 }

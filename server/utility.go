@@ -12,6 +12,7 @@ type DataJSON struct {
 	ClientTimestamp time.Time
 	ServerTimestamp time.Time
 	Payload         string
+	ResponseSize    uint64
 }
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
