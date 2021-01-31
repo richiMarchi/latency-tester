@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: latency-tester-enhanced
+  namespace: latency-tester
+  labels:
+    app.kubernetes.io/name: latency-tester-enhanced
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: latency-tester-enhanced
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: latency-tester-enhanced
+    spec:
+      containers:
+        - name: fileserver
+          image: halverneus/static-file-server:v1.8.3
+          env:
+            - name: FOLDER
+              value: /execdir
+            - name: PORT
+              value: "8081"
+          volumeMounts:
+            - mountPath: /execdir
+              name: execdir
+      initContainers:
+        - name: latency-tester-enhanced
+          image: richimarchi/latency-tester_enhanced
+          args:
+            - /settings/settings.yaml
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /execdir
+              name: execdir
+            - mountPath: /settings/
+              name: settings
+      volumes:
+        - name: execdir
+          emptyDir: {}
+        - name: settings
+          configMap:
+            name: settings

@@ -43,7 +43,6 @@ func connect() *websocket.Conn {
 		conf := &tls.Config{InsecureSkipVerify: true}
 		dialer := websocket.Dialer{TLSClientConfig: conf, HandshakeTimeout: 10 * time.Second}
 		u := url.URL{Scheme: "wss", Host: addrParts[0], Path: pathString + "/echo"}
-		log.Println(u.String())
 		c, _, err := dialer.Dial(u.String(), nil)
 		if err != nil {
 			log.Fatal("dial: ", err)

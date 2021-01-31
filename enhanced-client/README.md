@@ -123,6 +123,25 @@ Once everything is set, move to the `ansible` directory and run the playbook wit
 ansible-playbook playbook.yml
 ```
 
+## Enhanced Client Kubernetes Deployment
+
+It is possible to deploy the enhanced client in a Kubernetes cluster with the provided `clientDeployment.yaml` file,
+right after loading the settings file (call it `settings.yaml`) as ConfigMap:
+
+```
+kubectl create configmap settings --from-file settings.yaml
+kubectl apply -f clientDeployment.yaml
+```
+
+K8s will run the enhanced client in an InitContainer, then the results will be available from the `fileserver`
+container, which will be accessed to download all the generated files to the local machine with the following command
+combo:
+
+```
+kubectl port-forward <pod-name> 8081:8081
+wget -r localhost:8081
+```
+
 ## Enhanced Client Output Examples
 
 - Client csv output files
