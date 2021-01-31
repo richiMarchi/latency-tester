@@ -50,9 +50,9 @@ exec_dir: "/execdir/"
 percentiles_to_remove: 1
 # If false, BoxPlot and CDF have the same scale
 #equalization_disabled: true
-# The minimum value in the plot for the RTT (automatically obtained if omitted)
+# The minimum value in the plot for the RTT (automatically obtained if omitted or equal to 0)
 #rtt_min: 10
-# The maximum value in the plot for the RTT (automatically obtained if omitted)
+# The maximum value in the plot for the RTT (automatically obtained if omitted or equal to 0)
 # rtt_max: 20
 # The runs we selectively want to plot (default all runs if omitted)
 #runs_to_plot:

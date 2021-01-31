@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"go-hep.org/x/hep/hplot"
+	"gonum.org/v1/gonum/stat"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -16,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"text/tabwriter"
 	"time"
 )
 
@@ -185,6 +187,14 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 		panic(err)
 	}
 
+	summary, err := os.Create(settings.ExecDir + PlotDirName + "summary.txt")
+	if err != nil {
+		panic(err)
+	}
+	tabWriter := tabwriter.NewWriter(summary, 1, 1, 1, ' ', 0)
+	defer summary.Close()
+	fmt.Fprintln(tabWriter, "Destination\tInterval\tSize\tAVG RTT\tSTD DEV")
+
 	requestedRuns := requestedSlice(settings)
 	for epIndex, addr := range settings.Endpoints {
 		for interIndex, inter := range settings.Intervals {
@@ -289,6 +299,9 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 					p.Y.Max = settings.RttMax
 				}
 				p.Draw(draw.New(pdfToSave))
+				mean, stdDev := stat.MeanStdDev(rttValues(values), nil)
+				fmt.Fprintln(tabWriter, addr.Description+"\t"+strconv.Itoa(inter)+"\t"+strconv.Itoa(size)+"\t"+
+					strconv.FormatFloat(mean, 'f', 2, 64)+"\t"+strconv.FormatFloat(stdDev, 'f', 2, 64))
 			}
 		}
 	}
@@ -300,6 +313,7 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 		panic(err)
 	}
 	hourly.Close()
+	_ = tabWriter.Flush()
 
 	wg.Done()
 }

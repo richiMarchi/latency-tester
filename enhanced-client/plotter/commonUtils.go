@@ -273,3 +273,11 @@ func requestedSlice(settings Settings) []int {
 	}
 	return toReturn
 }
+
+func rttValues(pairs plotter.XYs) []float64 {
+	var rtts []float64
+	for _, p := range pairs {
+		rtts = append(rtts, p.Y)
+	}
+	return rtts
+}

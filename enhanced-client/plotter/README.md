@@ -35,9 +35,9 @@ Here is an example of the options:
 percentiles_to_remove: 1
 # If false, BoxPlot and CDF have the same scale
 equalization_disabled: false
-# The minimum value in the plot for the RTT (automatically obtained if omitted)
+# The minimum value in the plot for the RTT (automatically obtained if omitted or equal to 0)
 rtt_min: 10
-# The maximum value in the plot for the RTT (automatically obtained if omitted)
+# The maximum value in the plot for the RTT (automatically obtained if omitted or equal to 0)
 rtt_max: 20
 # The runs we selectively want to plot (default all runs if omitted)
 runs_to_plot:
@@ -49,6 +49,24 @@ runs_to_plot:
 recommended to add a letter or a number in an ordered way*
 
 ## Plotter Output Examples
+
+- Summary
+
+  [Summary Example](../../examples/summary.txt)
+
+  A summary of the round trip time measurement for each combination of Destination, Interval and Message Size.
+
+  ```
+  Destination Interval Size  AVG RTT STD DEV
+  LB-4        250      1024  42.51   3.85
+  LB-4        250      10240 68.38   4.75
+  LB-4        500      1024  42.73   5.02
+  LB-4        500      10240 70.68   4.33
+  LB-7        250      1024  42.28   5.56
+  LB-7        250      10240 72.01   2.64
+  LB-7        500      1024  42.62   2.03
+  LB-7        500      10240 98.01   106.88
+  ```
 
 - BoxPlot
 
