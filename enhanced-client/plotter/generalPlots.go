@@ -98,14 +98,15 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 	errMgmt(err)
 
 	var values plotter.XYs
+	var scatterData plotter.XYs
 	var firstTs float64
 	var previousStream int
 	streamCounter := 0
 	// Read the file as CSV and remove the headers line
-	parameters, _ := csv.NewReader(params).ReadAll()
-	endpoints := parameters[0]
-	intervals := parameters[1]
-	sizes := parameters[2]
+	parameters := csv.NewReader(params)
+	endpoints, _ := parameters.Read()
+	intervals, _ := parameters.Read()
+	sizes, _ := parameters.Read()
 	records, _ := csv.NewReader(file).ReadAll()
 	records = records[1:]
 
@@ -133,7 +134,11 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 			// If it is the last iteration, add the last record before saving to pdf
 			if index == len(records)-1 {
 				// Convert values to ms
-				values = append(values, plotter.XY{X: ts - firstTs, Y: rtt * 1000})
+				point := plotter.XY{X: ts - firstTs, Y: rtt * 1000}
+				values = append(values, point)
+				if row[3] != "" {
+					scatterData = append(scatterData, point)
+				}
 			}
 			p, err := plot.New()
 			errMgmt(err)
@@ -152,6 +157,8 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 				return values[i].X < values[j].X
 			})
 			err = plotutil.AddLines(p, "ACK RTT", values)
+			scatterPlot, err := plotter.NewScatter(scatterData)
+			p.Add(scatterPlot)
 			if !(p.X.Max-p.X.Min < (float64(settings.RunsStepDuration) - (float64(settings.RunsStepDuration) / 10))) {
 				if streamCounter != 0 {
 					pdfToSave.NextPage()
@@ -160,10 +167,15 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 				streamCounter += 1
 			}
 			values = values[:0]
+			scatterData = scatterData[:0]
 			previousStream = streamId
 		}
 		// Convert values to ms
-		values = append(values, plotter.XY{X: ts - firstTs, Y: rtt * 1000})
+		point := plotter.XY{X: ts - firstTs, Y: rtt * 1000}
+		values = append(values, point)
+		if row[3] != "" {
+			scatterData = append(scatterData, point)
+		}
 	}
 
 	if _, err := pdfToSave.WriteTo(w); err != nil {

@@ -250,13 +250,14 @@ func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal, localIp, execdir s
 	tcpRtt, err := os.Create(execdir + strconv.Itoa(run) + "-tcpdump_report.csv")
 	errMgmt(err)
 	defer tcpRtt.Close()
-	tcpRtt.WriteString("#frame-timestamp,tcp-ack-rtt,tcp-stream-id\n")
+	tcpRtt.WriteString("#frame-timestamp,tcp-ack-rtt,tcp-stream-id,retransmission\n")
 	tcpdumpCmd := exec.Command("tshark",
 		"-ni", "any",
 		"-Y", "tcp.analysis.ack_rtt and ip.dst=="+localIp,
 		"-e", "frame.time_epoch",
 		"-e", "tcp.analysis.ack_rtt",
 		"-e", "tcp.stream",
+		"-e", "tcp.analysis.retransmission",
 		"-T", "fields",
 		"-E", "separator=,",
 		"-E", "quote=d")
