@@ -16,7 +16,7 @@ docker pull richimarchi/latency-tester_client
 docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/latency-tester_client [-reps=<repetitions>] [-requestPayload=<bytes>] [-responsePayload=<bytes>] [-interval=<ms>] [-tcpStats=<enabled>] [-tls=<enabled>] [-traceroute=<address>] [-log=<log-file>] <address>
 ```
 
-Latest version: `1.0.1`
+Latest version: `1.0.2`
 
 ### Required input parameters
 
