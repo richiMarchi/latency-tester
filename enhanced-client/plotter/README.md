@@ -7,7 +7,7 @@ docker pull richimarchi/latency-tester_plotter
 docker run --rm -v <local-log-folder>:/execdir richimarchi/latency-tester_plotter /execdir/<settings-yaml-file>
 ```
 
-Latest version: `1.0.1`
+Latest version: `1.0.2`
 
 ### Required input parameters
 
