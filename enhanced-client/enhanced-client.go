@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"github.com/lorenzosaino/go-sysctl"
 	"gopkg.in/yaml.v2"
@@ -130,8 +131,7 @@ func main() {
 						"-tls="+settings.TlsEnabled, "-log="+settings.ExecDir+strconv.Itoa(i)+"-"+addr.Destination+
 							".i"+strconv.Itoa(inter)+".x"+strconv.Itoa(size), addr.Destination).Run()
 					if err != nil {
-						log.Print("ERROR: ")
-						log.Println(err)
+						log.Print("*** CLIENT ERROR ***", err)
 					}
 				}
 			}
@@ -159,8 +159,13 @@ func main() {
 
 	// Plotting
 	log.Println("Plotting...")
-	output, err := exec.Command("./plotter", os.Args[1]).Output()
-	log.Println(string(output))
+	plotter := exec.Command("./plotter", os.Args[1])
+	var stdErr bytes.Buffer
+	plotter.Stderr = &stdErr
+	_ = plotter.Run()
+	if stdErr.Len() > 0 {
+		log.Println("*** PLOTTER ERROR ***", stdErr.String())
+	}
 	log.Println("Everything's complete!")
 
 	stopHealthChecker <- os.Interrupt
