@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"github.com/brucespang/go-tcpinfo"
 	"github.com/gorilla/websocket"
 	"log"
@@ -78,15 +79,15 @@ func randomString(length uint64) string {
 }
 
 func printLogs() {
-	log.Println("Repetitions:\t\t", *reps)
-	log.Println("Request Bytes:\t\t", *requestBytes)
-	log.Println("Response Bytes:\t\t", *responseBytes)
-	log.Println("Send Interval:\t\t", *interval)
-	log.Println("TLS enabled:\t\t", *https)
-	log.Println("Traceroute IP:\t", *tracerouteIp)
-	log.Println("TCP Stats enabled:\t", *sockOpt)
-	log.Println("Address:\t\t", address)
-	log.Println()
+	fmt.Println("Repetitions:\t\t", *reps)
+	fmt.Println("Request Bytes:\t\t", *requestBytes)
+	fmt.Println("Response Bytes:\t\t", *responseBytes)
+	fmt.Println("Send Interval:\t\t", *interval)
+	fmt.Println("TLS enabled:\t\t", *https)
+	fmt.Println("Traceroute IP:\t", *tracerouteIp)
+	fmt.Println("TCP Stats enabled:\t", *sockOpt)
+	fmt.Println("Address:\t\t", address)
+	fmt.Println()
 }
 
 func getTCPConnFromWebsocketConn(conn *websocket.Conn) *net.TCPConn {

@@ -126,12 +126,15 @@ func main() {
 						"EP: " + addr.Destination + " - " +
 						"Inter: " + strconv.Itoa(inter) + " - " +
 						"Msg: " + strconv.Itoa(size))
-					err = exec.Command("./client", "-reps="+strconv.Itoa(repetitions), "-interval="+strconv.Itoa(inter),
+					clientCmd := exec.Command("./client", "-reps="+strconv.Itoa(repetitions), "-interval="+strconv.Itoa(inter),
 						"-requestPayload="+strconv.Itoa(size), "-responsePayload="+strconv.Itoa(settings.ResponseSize),
 						"-tls="+settings.TlsEnabled, "-log="+settings.ExecDir+strconv.Itoa(i)+"-"+addr.Destination+
-							".i"+strconv.Itoa(inter)+".x"+strconv.Itoa(size), addr.Destination).Run()
-					if err != nil {
-						log.Print("*** CLIENT ERROR ***", err)
+							".i"+strconv.Itoa(inter)+".x"+strconv.Itoa(size), addr.Destination)
+					var stdErrClient bytes.Buffer
+					clientCmd.Stderr = &stdErrClient
+					_ = clientCmd.Run()
+					if stdErrClient.Len() > 0 {
+						log.Println("*** CLIENT ERROR ***\n", stdErrClient.String())
 					}
 				}
 			}
@@ -159,12 +162,12 @@ func main() {
 
 	// Plotting
 	log.Println("Plotting...")
-	plotter := exec.Command("./plotter", os.Args[1])
-	var stdErr bytes.Buffer
-	plotter.Stderr = &stdErr
-	_ = plotter.Run()
-	if stdErr.Len() > 0 {
-		log.Println("*** PLOTTER ERROR ***", stdErr.String())
+	plotterCmd := exec.Command("./plotter", os.Args[1])
+	var stdErrPlotter bytes.Buffer
+	plotterCmd.Stderr = &stdErrPlotter
+	_ = plotterCmd.Run()
+	if stdErrPlotter.Len() > 0 {
+		log.Println("*** PLOTTER ERROR ***\n", stdErrPlotter.String())
 	}
 	log.Println("Everything's complete!")
 

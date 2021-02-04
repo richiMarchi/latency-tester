@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"os"
@@ -22,7 +23,7 @@ func readDispatcher(
 		_, message, err := c.ReadMessage()
 		if err != nil {
 			if strings.Contains(err.Error(), "1000") {
-				log.Println("read: ", err)
+				fmt.Println("read: ", err)
 				wgReader.Wait()
 				close(done)
 				return
@@ -58,7 +59,7 @@ func singleRead(
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.UnixNano(), 10))
 		toolRtt.WriteString(",-1\n")
 	} else {
-		log.Printf("%d.\t%d.%d ms", jsonMap.Id, latency.Milliseconds(), latency%time.Millisecond)
+		fmt.Printf("%d.\t%d.%d ms", jsonMap.Id, latency.Milliseconds(), latency%time.Millisecond)
 		mux.Lock()
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ClientTimestamp.UnixNano(), 10))
 		toolRtt.WriteString(",")

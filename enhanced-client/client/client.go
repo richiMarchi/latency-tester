@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"os"
@@ -96,6 +97,6 @@ func main() {
 	// Wait for the go routines to complete their job
 	<-doneRead
 	wg.Wait()
-	log.Println()
-	log.Println("Everything is completed!")
+	fmt.Println()
+	fmt.Println("Everything is completed!")
 }
