@@ -59,7 +59,7 @@ func singleRead(
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.UnixNano(), 10))
 		toolRtt.WriteString(",-1\n")
 	} else {
-		fmt.Printf("%d.\t%d.%d ms", jsonMap.Id, latency.Milliseconds(), latency%time.Millisecond)
+		fmt.Printf("%d.\t%d.%d ms\n", jsonMap.Id, latency.Milliseconds(), latency%time.Millisecond)
 		mux.Lock()
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ClientTimestamp.UnixNano(), 10))
 		toolRtt.WriteString(",")
