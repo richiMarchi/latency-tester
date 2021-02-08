@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"os"
@@ -44,7 +45,7 @@ func requestSender(
 		tsDiff := (time.Duration(*interval) * time.Millisecond) - time.Duration(getTimestamp().Sub(tmp).Nanoseconds())
 		if tsDiff < 0 {
 			tsDiff = 0
-			log.Println("Warning: It was not possible to send message", *msgId+1, "after the desired interval!")
+			fmt.Println("Warning: It was not possible to send message", *msgId+1, "after the desired interval!")
 		}
 		select {
 		case <-interrupt:
