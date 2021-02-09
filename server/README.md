@@ -10,7 +10,7 @@ docker pull richimarchi/latency-tester_server
 docker run -p 8080:8080 [--name <container-name>] richimarchi/latency-tester_server [-addr=<ip:port>] [-tls=<enabled>]
 ```
 
-Latest version: `1.0.0`
+Latest version: `1.0.1`
 
 ### Server flags:
 
