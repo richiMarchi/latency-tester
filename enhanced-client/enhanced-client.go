@@ -44,6 +44,7 @@ type Settings struct {
 	Intervals         []int          `yaml:"intervals"`     // in milliseconds
 	MsgSizes          []int          `yaml:"msg_sizes"`     // in bytes
 	ResponseSize      int            `yaml:"response_size"` // in bytes
+	TcpdumpEnabled    bool           `yaml:"tcpdump_enabled"`
 	TlsEnabled        string         `yaml:"tls_enabled"`
 	ExecDir           string         `yaml:"exec_dir"`
 }
@@ -105,6 +106,7 @@ func main() {
 	}
 
 	for i := 1; i <= settings.Runs; i++ {
+		// Handle Iperf
 		for _, iperfData := range settings.IperfDestinations {
 			if iperfData.Port == "" {
 				iperfData.Port = "5201"
@@ -113,11 +115,15 @@ func main() {
 			iperfer(i, settings.ExecDir, iperfData)
 			log.Println("Iperf towards", iperfData.Name, "complete!")
 		}
+		// Handle Tcpdump
 		stopTcpdump := make(chan os.Signal, 1)
-		wg.Add(1)
-		localIp := getOutboundIP()
-		go tcpDumper(i, &wg, stopTcpdump, localIp, settings.ExecDir)
+		if settings.TcpdumpEnabled {
+			wg.Add(1)
+			localIp := getOutboundIP()
+			go tcpDumper(i, &wg, stopTcpdump, localIp, settings.ExecDir)
+		}
 		startTime := getTimestamp()
+		// Start E2E analysis
 		for _, addr := range settings.Endpoints {
 			for _, inter := range settings.Intervals {
 				for _, size := range settings.MsgSizes {
@@ -139,7 +145,9 @@ func main() {
 				}
 			}
 		}
-		stopTcpdump <- os.Interrupt
+		if settings.TcpdumpEnabled {
+			stopTcpdump <- os.Interrupt
+		}
 		for range settings.PingDestinations {
 			stopPing <- os.Interrupt
 		}

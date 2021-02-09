@@ -36,6 +36,7 @@ type Settings struct {
 	Intervals            []int          `yaml:"intervals"`     // in milliseconds
 	MsgSizes             []int          `yaml:"msg_sizes"`     // in bytes
 	ResponseSize         int            `yaml:"response_size"` // in bytes
+	TcpdumpEnabled       bool           `yaml:"tcpdump_enabled"`
 	TlsEnabled           string         `yaml:"tls_enabled"`
 	ExecDir              string         `yaml:"exec_dir"`
 	PercentilesToRemove  int            `yaml:"percentiles_to_remove"`
@@ -104,20 +105,24 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	wg.Add(7 + len(requestedSlice(settings)))
-	for _, run := range requestedSlice(settings) {
-		go TcpdumpPlotter(settings, run, &wg)
+	if settings.TcpdumpEnabled {
+		runsRequested := requestedSlice(settings)
+		wg.Add(len(runsRequested))
+		for _, run := range runsRequested {
+			go TcpdumpPlotter(settings, run, &wg)
+		}
 	}
+	if len(settings.PingDestinations) > 0 {
+		wg.Add(1)
+		go PingPlotter(settings, &wg)
+	}
+	wg.Add(7)
 	go typedBoxPlots(settings, SIZES, &wg)
 	go typedBoxPlots(settings, INTERVALS, &wg)
 	go typedBoxPlots(settings, ENDPOINTS, &wg)
 	go typedCDFs(settings, SIZES, &wg)
 	go typedCDFs(settings, INTERVALS, &wg)
 	go typedCDFs(settings, ENDPOINTS, &wg)
-	if len(settings.PingDestinations) > 0 {
-		wg.Add(1)
-		go PingPlotter(settings, &wg)
-	}
 	// Generates 2 pdfs, standard and boxplots
 	go RttPlotter(settings, &wg)
 	wg.Wait()
