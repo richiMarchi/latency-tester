@@ -56,12 +56,14 @@ func main() {
 	}
 
 	stopHealthChecker := make(chan os.Signal, 1)
+	log.Println("Run Health Checker on '0.0.0.0:8080/health'")
 	go runHealthChecker(stopHealthChecker)
 
 	// Settings parsing
 	file, err := ioutil.ReadFile(os.Args[1])
 	errMgmt(err)
 	var settings Settings
+	log.Println("Reading settings")
 	err = yaml.Unmarshal(file, &settings)
 	errMgmt(err)
 
@@ -102,6 +104,7 @@ func main() {
 	wg.Add(len(settings.PingDestinations))
 	killPing := false
 	for _, dest := range settings.PingDestinations {
+		log.Println("Starting ping thread towards", dest.Name)
 		go pingThread(&wg, settings.ExecDir, dest, settings.PingInterval, stopPing, &killPing)
 	}
 
@@ -120,6 +123,7 @@ func main() {
 		if settings.TcpdumpEnabled {
 			wg.Add(1)
 			localIp := getOutboundIP()
+			log.Println("Starting Tcpdump")
 			go tcpDumper(i, &wg, stopTcpdump, localIp, settings.ExecDir)
 		}
 		startTime := getTimestamp()
@@ -138,7 +142,10 @@ func main() {
 							".i"+strconv.Itoa(inter)+".x"+strconv.Itoa(size), addr.Destination)
 					var stdErrClient bytes.Buffer
 					clientCmd.Stderr = &stdErrClient
-					_ = clientCmd.Run()
+					err = clientCmd.Run()
+					if err != nil {
+						log.Println(err)
+					}
 					if stdErrClient.Len() > 0 {
 						log.Println("*** CLIENT ERROR ***\n", stdErrClient.String())
 					}
@@ -146,9 +153,14 @@ func main() {
 			}
 		}
 		if settings.TcpdumpEnabled {
+			log.Println("Signal Tcpdump Stop")
 			stopTcpdump <- os.Interrupt
 		}
+		if i == settings.Runs {
+			killPing = true
+		}
 		for range settings.PingDestinations {
+			log.Println("Saving gathered ping data to file")
 			stopPing <- os.Interrupt
 		}
 		if i != settings.Runs {
@@ -157,14 +169,10 @@ func main() {
 			if waitTime < 0 {
 				log.Println("Warning: Run lasted more than 'run_interval'!")
 			} else {
+				log.Println("Sleeping for about", strconv.Itoa(int(waitTime.Seconds())), "seconds to wait until next run")
 				time.Sleep(waitTime)
 			}
 		}
-	}
-
-	killPing = true
-	for range settings.PingDestinations {
-		stopPing <- os.Interrupt
 	}
 	wg.Wait()
 
@@ -173,16 +181,19 @@ func main() {
 	plotterCmd := exec.Command("./plotter", os.Args[1])
 	var stdErrPlotter bytes.Buffer
 	plotterCmd.Stderr = &stdErrPlotter
-	_ = plotterCmd.Run()
+	err = plotterCmd.Run()
+	if err != nil {
+		log.Println(err)
+	}
 	if stdErrPlotter.Len() > 0 {
 		log.Println("*** PLOTTER ERROR ***\n", stdErrPlotter.String())
 	}
-	log.Println("Everything's complete!")
-
 	stopHealthChecker <- os.Interrupt
+	log.Println("Everything's complete!")
 }
 
 func generateParamsFile(settings Settings) {
+	log.Println("Generating parameters file")
 	paramsFile, err := os.Create(settings.ExecDir + "parameters.txt")
 	errMgmt(err)
 	defer paramsFile.Close()
@@ -220,7 +231,11 @@ func runHealthChecker(c chan os.Signal) {
 	// Handle stop
 	go func() {
 		for range c {
-			_ = server.Shutdown(context.TODO())
+			log.Println("Stopping health checker")
+			err := server.Shutdown(context.TODO())
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}()
 
@@ -237,7 +252,9 @@ func iperfer(run int, execdir string, iperfData IperfData) {
 	iperfRes, err := exec.Command(
 		"timeout", "10", "iperf3", "-c", iperfData.Ip, "-p", iperfData.Port, "-t", "5").Output()
 	_, err = iperfFile.Write(iperfRes)
-	errMgmt(err)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func pingThread(wg *sync.WaitGroup, execdir string, destination PingData, interval int, c chan os.Signal, kill *bool) {
@@ -250,14 +267,22 @@ func pingThread(wg *sync.WaitGroup, execdir string, destination PingData, interv
 		// Handle stop
 		go func() {
 			for range c {
-				_ = pingerCmd.Process.Signal(os.Interrupt)
+				log.Println("Stopping ping to save to file")
+				err = pingerCmd.Process.Signal(os.Interrupt)
+				if err != nil {
+					log.Println(err)
+				}
 			}
 		}()
 
 		pingOutput, err := pingerCmd.Output()
-		errMgmt(err)
+		if err != nil {
+			log.Println(err)
+		}
 		_, err = osRtt.Write(pingOutput)
-		errMgmt(err)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 	wg.Done()
 }
@@ -281,14 +306,22 @@ func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal, localIp, execdir s
 	// Handle stop
 	go func() {
 		for range c {
-			_ = tcpdumpCmd.Process.Signal(os.Interrupt)
+			log.Println("Stop Tcpdump")
+			err = tcpdumpCmd.Process.Signal(os.Interrupt)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}()
 
 	tcpdumpOutput, err := tcpdumpCmd.Output()
-	errMgmt(err)
+	if err != nil {
+		log.Println(err)
+	}
 	_, err = tcpRtt.Write(tcpdumpOutput)
-	errMgmt(err)
+	if err != nil {
+		log.Println(err)
+	}
 	wg.Done()
 }
 

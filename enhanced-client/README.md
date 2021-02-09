@@ -24,7 +24,7 @@ docker pull richimarchi/latency-tester_enhanced
 docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/latency-tester_enhanced /execdir/<settings-yaml-file>
 ```
 
-Latest version: `1.0.2`
+Latest version: `1.0.3`
 
 ### Required input parameters
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -65,6 +66,7 @@ func main() {
 	file, err := ioutil.ReadFile(os.Args[1])
 	errMgmt(err)
 	var settings Settings
+	fmt.Println("Loading settings")
 	err = yaml.Unmarshal(file, &settings)
 	errMgmt(err)
 
@@ -80,7 +82,11 @@ func main() {
 	}
 
 	// Create the file in order that it can be totally handled by the host machine
-	_ = os.Mkdir(settings.ExecDir+PlotDirName, os.ModePerm)
+	fmt.Println("Creating 'plots' folder")
+	err = os.Mkdir(settings.ExecDir+PlotDirName, os.ModePerm)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	readme, err := os.Create(settings.ExecDir + PlotDirName + "README.txt")
 	errMgmt(err)

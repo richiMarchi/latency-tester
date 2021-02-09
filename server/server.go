@@ -48,8 +48,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
-			log.Println("read: ", err)
-			log.Println()
+			log.Println("read: " + err.Error() + "\n")
 			return
 		}
 		var jsonMap DataJSON
