@@ -84,15 +84,15 @@ func main() {
 	combinations := len(settings.Endpoints) * len(settings.Intervals) * len(settings.MsgSizes)
 	if settings.RunsStepDuration == 0 {
 		settings.RunsStepDuration = settings.RunsInterval * 60 / combinations
-		log.Println(LoggerHdr+"Warning: runs_step_duration not set, the value will be", settings.RunsStepDuration)
+		log.Println(LoggerHdr+"WARNING: runs_step_duration not set, the value will be", settings.RunsStepDuration)
 	}
 	if settings.RunsInterval == 0 {
 		settings.RunsInterval = int(math.Ceil(float64(settings.RunsStepDuration*combinations) / 60))
-		log.Println(LoggerHdr+"Warning: runs_interval not set, the value will be", settings.RunsInterval)
+		log.Println(LoggerHdr+"WARNING: runs_interval not set, the value will be", settings.RunsInterval)
 	}
 	avgSleep := float64(settings.RunsInterval*60-combinations*settings.RunsStepDuration) / 60
 	if avgSleep < 0 {
-		log.Println(LoggerHdr + "Warning: the runs will be out of phase, not enough time to complete a run")
+		log.Println(LoggerHdr + "WARNING: the runs will be out of phase, not enough time to complete a run")
 	} else {
 		log.Println(LoggerHdr+"Average sleep minutes between end and start of consecutive runs:",
 			math.Round(avgSleep))
@@ -102,7 +102,7 @@ func main() {
 	ss, ssErr := sysctl.Get("net.ipv4.tcp_slow_start_after_idle")
 	cc, ccErr := sysctl.Get("net.ipv4.tcp_congestion_control")
 	if ssErr != nil || ccErr != nil {
-		log.Println(LoggerHdr + "Warning: Cannot access TCP system parameters.")
+		log.Println(LoggerHdr + "WARNING: Cannot access TCP system parameters.")
 	} else {
 		log.Println(LoggerHdr+"TCP slow start after idle value: ", ss)
 		log.Println(LoggerHdr+"TCP congestion control algorithm: ", cc)
@@ -188,7 +188,7 @@ func main() {
 			elapsed := getTimestamp().Sub(startTime)
 			waitTime := time.Duration(settings.RunsInterval)*time.Minute - elapsed
 			if waitTime < 0 {
-				log.Println(LoggerHdr + "Warning: Run lasted more than 'run_interval'!")
+				log.Println(LoggerHdr + "WARNING: Run lasted more than 'run_interval'!")
 			} else {
 				log.Println(LoggerHdr+"Sleeping for about", strconv.Itoa(int(waitTime.Seconds())),
 					"seconds to wait until next run")
@@ -203,15 +203,13 @@ func main() {
 	plotterCmd := exec.Command("./plotter", os.Args[1])
 	var stdErrPlotter bytes.Buffer
 	plotterCmd.Stderr = &stdErrPlotter
-	plotterOtp, err := plotterCmd.Output()
+	err = plotterCmd.Run()
 	if err != nil {
 		log.Println(LoggerHdr+"*** ERROR plotting data:", err)
 	} else {
-		log.Println(LoggerHdr+"Plotting successfully executed:\n", string(plotterOtp))
+		log.Println(LoggerHdr + "Plotting successfully executed")
 	}
-	if stdErrPlotter.Len() > 0 {
-		log.Println(LoggerHdr+"*** PLOTTER STDERR ***\n", stdErrPlotter.String())
-	}
+	log.Print(LoggerHdr + "Plotting Logs:\n" + stdErrPlotter.String())
 	stopHealthChecker <- os.Interrupt
 	log.Println(LoggerHdr + "Everything's complete!")
 }

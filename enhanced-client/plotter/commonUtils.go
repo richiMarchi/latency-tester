@@ -83,7 +83,7 @@ func yValsCDF(length int) []float64 {
 
 func errMgmt(err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(LoggerHdr + err.Error())
 	}
 }
 
@@ -110,9 +110,7 @@ func adjustMinMaxX(plots [][]*plot.Plot, rows, cols int, min, max float64) {
 // Open the files with the name containing the nameLike strings
 func openDesiredFiles(execdir string, requestedRuns []int, nameLike ...string) []*os.File {
 	files, err := ioutil.ReadDir(execdir)
-	if err != nil {
-		log.Fatal(err)
-	}
+	errMgmt(err)
 	var openFiles []*os.File
 	for _, f := range files {
 		if strings.Contains(f.Name(), nameLike[0]) {
@@ -122,9 +120,7 @@ func openDesiredFiles(execdir string, requestedRuns []int, nameLike ...string) [
 				continue
 			}
 			file, err := os.Open(execdir + f.Name())
-			if err != nil {
-				log.Fatal(err)
-			}
+			errMgmt(err)
 			openFiles = append(openFiles, file)
 		}
 	}
@@ -160,7 +156,12 @@ func generateIntBoxPlotAndLimits(p *plot.Plot,
 		position += 1
 		p.Add(boxplot)
 	}
-	p.NominalX(nominals...)
+	if len(nominals) > 0 {
+		p.NominalX(nominals...)
+	} else {
+		log.Println(LoggerHdr + "WARNING: Some files could be missing")
+	}
+
 	return p, floats.Min(mins), floats.Max(maxes)
 }
 
@@ -193,7 +194,11 @@ func generateStringBoxPlotAndLimits(p *plot.Plot,
 		position += 1
 		p.Add(boxplot)
 	}
-	p.NominalX(nominals...)
+	if len(nominals) > 0 {
+		p.NominalX(nominals...)
+	} else {
+		log.Println(LoggerHdr + "WARNING: Some files could be missing")
+	}
 
 	return p, floats.Min(mins), floats.Max(maxes)
 }

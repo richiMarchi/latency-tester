@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/csv"
-	"fmt"
 	"go-hep.org/x/hep/hplot"
 	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -71,7 +71,7 @@ func intXepBoxPlot(ep EndpointData,
 	execdir string,
 	percentilesToRemove int,
 	requestedRuns []int) (*plot.Plot, float64, float64) {
-	fmt.Println("Plot for " + ep.Description + " and send interval " + strconv.Itoa(si))
+	log.Println(LoggerHdr + "Plot for " + ep.Description + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	errMgmt(err)
 
@@ -113,7 +113,7 @@ func sizeXepBoxPlot(ep EndpointData,
 	execdir string,
 	percentilesToRemove int,
 	requestedRuns []int) (*plot.Plot, float64, float64) {
-	fmt.Println("Plot for message size " + strconv.Itoa(msgSize) + " and endpoint " + ep.Description)
+	log.Println(LoggerHdr + "Plot for message size " + strconv.Itoa(msgSize) + " and endpoint " + ep.Description)
 	p, err := plot.New()
 	errMgmt(err)
 
@@ -156,7 +156,7 @@ func intXsizeBoxPlot(msgSize int,
 	execdir string,
 	percentilesToRemove int,
 	requestedRuns []int) (*plot.Plot, float64, float64) {
-	fmt.Println("Plot for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
+	log.Println(LoggerHdr + "Plot for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
 

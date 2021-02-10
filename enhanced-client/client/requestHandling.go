@@ -45,7 +45,7 @@ func requestSender(
 		tsDiff := (time.Duration(*interval) * time.Millisecond) - time.Duration(getTimestamp().Sub(tmp).Nanoseconds())
 		if tsDiff < 0 {
 			tsDiff = 0
-			fmt.Println("Warning: It was not possible to send message", *msgId+1, "after the desired interval!")
+			fmt.Println("WARNING: It was not possible to send message", *msgId+1, "after the desired interval!")
 		}
 		select {
 		case <-interrupt:

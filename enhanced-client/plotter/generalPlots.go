@@ -12,6 +12,7 @@ import (
 	"gonum.org/v1/plot/vg"
 	"gonum.org/v1/plot/vg/draw"
 	"gonum.org/v1/plot/vg/vgpdf"
+	"log"
 	"os"
 	"sort"
 	"strconv"
@@ -22,7 +23,7 @@ import (
 )
 
 func PingPlotter(settings Settings, wg *sync.WaitGroup) {
-	fmt.Println("Plotting Ping")
+	log.Println(LoggerHdr + "Plotting Ping")
 
 	pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
 	w, err := os.Create(settings.ExecDir + PlotDirName + "pingPlot.pdf")
@@ -89,7 +90,7 @@ func PingPlotter(settings Settings, wg *sync.WaitGroup) {
 }
 
 func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
-	fmt.Println("Plotting TCP run #", run)
+	log.Println(LoggerHdr+"Plotting TCP run #", run)
 
 	// Open the desired file
 	file, err := os.Open(settings.ExecDir + strconv.Itoa(run) + "-tcpdump_report.csv")
@@ -187,7 +188,7 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 }
 
 func RttPlotter(settings Settings, wg *sync.WaitGroup) {
-	fmt.Println("Plotting E2E RTT")
+	log.Println(LoggerHdr + "Plotting E2E RTT")
 	pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
 	w, err := os.Create(settings.ExecDir + PlotDirName + "e2eLatency.pdf")
 	if err != nil {

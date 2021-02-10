@@ -2,12 +2,12 @@ package main
 
 import (
 	"encoding/csv"
-	"fmt"
 	"go-hep.org/x/hep/hplot"
 	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
+	"log"
 	"math"
 	"sort"
 	"strconv"
@@ -68,7 +68,7 @@ func intXepCDF(
 	execdir string,
 	percentilesToRemove int,
 	requestedRuns []int) *plot.Plot {
-	fmt.Println("CDF for " + ep.Description + " and send interval " + strconv.Itoa(si))
+	log.Println(LoggerHdr + "CDF for " + ep.Description + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
 	errMgmt(err)
 
@@ -113,7 +113,7 @@ func sizeXepCDF(
 	execdir string,
 	percentilesToRemove int,
 	requestedRuns []int) *plot.Plot {
-	fmt.Println("CDF for " + ep.Description + " and message size " + strconv.Itoa(msgSize))
+	log.Println(LoggerHdr + "CDF for " + ep.Description + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
 
@@ -158,7 +158,7 @@ func intXsizeCDF(
 	execdir string,
 	percentilesToRemove int,
 	requestedRuns []int) *plot.Plot {
-	fmt.Println("CDF for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
+	log.Println(LoggerHdr + "CDF for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
 	errMgmt(err)
 
