@@ -45,7 +45,7 @@ type Settings struct {
 	MsgSizes          []int          `yaml:"msg_sizes"`     // in bytes
 	ResponseSize      int            `yaml:"response_size"` // in bytes
 	TcpdumpEnabled    bool           `yaml:"tcpdump_enabled"`
-	TlsEnabled        string         `yaml:"tls_enabled"`
+	TlsEnabled        bool           `yaml:"tls_enabled"`
 	ExecDir           string         `yaml:"exec_dir"`
 }
 
@@ -154,7 +154,7 @@ func main() {
 						"-interval="+strconv.Itoa(inter),
 						"-requestPayload="+strconv.Itoa(size),
 						"-responsePayload="+strconv.Itoa(settings.ResponseSize),
-						"-tls="+settings.TlsEnabled,
+						"-tls="+strconv.FormatBool(settings.TlsEnabled),
 						"-log="+settings.ExecDir+strconv.Itoa(i)+"-"+addr.Destination+".i"+strconv.Itoa(inter)+
 							".x"+strconv.Itoa(size), addr.Destination)
 					var stdErrClient bytes.Buffer
@@ -188,7 +188,8 @@ func main() {
 			elapsed := getTimestamp().Sub(startTime)
 			waitTime := time.Duration(settings.RunsInterval)*time.Minute - elapsed
 			if waitTime < 0 {
-				log.Println(LoggerHdr + "WARNING: Run lasted more than 'run_interval'!")
+				log.Println(LoggerHdr + "WARNING: Run lasted more than 'run_interval' of about " +
+					strconv.FormatFloat(math.Abs(waitTime.Seconds()), 'f', 2, 64) + " seconds")
 			} else {
 				log.Println(LoggerHdr+"Sleeping for about", strconv.Itoa(int(waitTime.Seconds())),
 					"seconds to wait until next run")
@@ -292,7 +293,11 @@ func iperfer(run int, execdir string, iperfData IperfData) {
 	log.Println(LoggerHdr+"Running Iperf towards", iperfData.Name+"...")
 	iperfRes, err := exec.Command(
 		"timeout", "10", "iperf3", "-c", iperfData.Ip, "-p", iperfData.Port, "-t", "5").Output()
-	log.Println(LoggerHdr+"Iperf towards", iperfData.Name, "complete!")
+	if err != nil {
+		log.Fatal(LoggerHdr+"*** ERROR running iperf towards "+iperfData.Name+":", err)
+	} else {
+		log.Println(LoggerHdr+"Iperf towards", iperfData.Name, "complete!")
+	}
 	log.Println(LoggerHdr + "Saving " + iperfData.Name + " iperf output to file")
 	_, err = iperfFile.Write(iperfRes)
 	if err != nil {
@@ -333,7 +338,7 @@ func pingThread(wg *sync.WaitGroup, execdir string, destination PingData, interv
 		log.Println(LoggerHdr+"Starting ping towards", destination.Name)
 		pingOutput, err := pingerCmd.Output()
 		if err != nil {
-			log.Println(LoggerHdr+"*** ERROR pinging "+destination.Name+":", err)
+			log.Fatal(LoggerHdr+"*** ERROR pinging "+destination.Name+":", err)
 		} else {
 			log.Println(LoggerHdr + destination.Name + " ping successfully executed")
 		}
@@ -388,7 +393,7 @@ func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal, localIp, execdir s
 	log.Println(LoggerHdr + "Starting tcpdump for run " + strconv.Itoa(run))
 	tcpdumpOutput, err := tcpdumpCmd.Output()
 	if err != nil {
-		log.Println(LoggerHdr+"*** ERROR executing tcpdump for run "+strconv.Itoa(run)+":", err)
+		log.Fatal(LoggerHdr+"*** ERROR executing tcpdump for run "+strconv.Itoa(run)+":", err)
 	} else {
 		log.Println(LoggerHdr + "Tcpdump for run " + strconv.Itoa(run) + " successfully executed")
 	}

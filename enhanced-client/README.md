@@ -88,8 +88,8 @@ msg_sizes:
 response_size: 1024
 # True if TCP ACK RTT is requested
 tcpdump_enabled: true
-# True if TLS enabled (handled as string)
-tls_enabled: "true"
+# True if TLS enabled
+tls_enabled: true
 # Execution directory (if in Docker, this must coincide with the mapped directory)
 exec_dir: "/execdir/"
 ```
