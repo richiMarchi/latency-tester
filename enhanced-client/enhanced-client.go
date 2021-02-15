@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -170,7 +171,7 @@ func main() {
 						"-requestPayload="+strconv.Itoa(size),
 						"-responsePayload="+strconv.Itoa(settings.ResponseSize),
 						"-tls="+strconv.FormatBool(settings.TlsEnabled),
-						"-log="+settings.ExecDir+strconv.Itoa(i)+"-"+addr.Destination+".i"+strconv.Itoa(inter)+
+						"-log="+settings.ExecDir+strconv.Itoa(i)+"-"+strings.ReplaceAll(addr.Destination, ":", "_")+".i"+strconv.Itoa(inter)+
 							".x"+strconv.Itoa(size), addr.Destination)
 					var stdErrClient bytes.Buffer
 					clientCmd.Stderr = &stdErrClient

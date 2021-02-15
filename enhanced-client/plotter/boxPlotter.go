@@ -76,7 +76,8 @@ func intXepBoxPlot(ep EndpointData,
 	errMgmt(err)
 
 	// Open the desired files
-	openFiles := openDesiredFiles(execdir, requestedRuns, "-"+ep.Destination+".i"+strconv.Itoa(si)+".x")
+	openFiles := openDesiredFiles(execdir, requestedRuns,
+		"-"+strings.ReplaceAll(ep.Destination, ":", "_")+".i"+strconv.Itoa(si)+".x")
 
 	valuesMap := make(map[int]plotter.Values)
 
@@ -119,7 +120,8 @@ func sizeXepBoxPlot(ep EndpointData,
 	errMgmt(err)
 
 	// Open the desired files
-	openFiles := openDesiredFiles(execdir, requestedRuns, "-"+ep.Destination+".i", ".x"+strconv.Itoa(msgSize)+".csv")
+	openFiles := openDesiredFiles(execdir, requestedRuns, "-"+strings.ReplaceAll(ep.Destination, ":", "_")+".i",
+		".x"+strconv.Itoa(msgSize)+".csv")
 
 	valuesMap := make(map[int]plotter.Values)
 

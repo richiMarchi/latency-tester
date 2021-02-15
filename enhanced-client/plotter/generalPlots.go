@@ -220,8 +220,9 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 				var lastOfRun float64
 				var runTime string
 				for runIndex, run := range requestedRuns {
-					file, err := os.Open(settings.ExecDir +
-						strconv.Itoa(run) + "-" + addr.Destination + ".i" + strconv.Itoa(inter) + ".x" + strconv.Itoa(size) + ".csv")
+					file, err := os.Open(settings.ExecDir + strconv.Itoa(run) + "-" +
+						strings.ReplaceAll(addr.Destination, ":", "_") + ".i" + strconv.Itoa(inter) + ".x" +
+						strconv.Itoa(size) + ".csv")
 					if err == nil {
 						records, _ := csv.NewReader(file).ReadAll()
 						var runGap float64

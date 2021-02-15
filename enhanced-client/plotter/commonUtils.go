@@ -55,7 +55,7 @@ func commonPlotting(plots [][]*plot.Plot, rows int, cols int, cardWidth int, fil
 // Return the name of a destination given the address
 func nameFromDest(dest string, eps *[]EndpointData) (string, bool) {
 	for _, b := range *eps {
-		if b.Destination == dest {
+		if strings.ReplaceAll(b.Destination, ":", "_") == dest {
 			return b.Description, true
 		}
 	}
