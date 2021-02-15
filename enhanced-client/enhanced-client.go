@@ -108,6 +108,21 @@ func main() {
 		log.Println(LoggerHdr+"TCP congestion control algorithm: ", cc)
 	}
 
+	ts := getTimestamp()
+	year, month, day := ts.UTC().Date()
+	hour := ts.Hour()
+	min := ts.Minute()
+	sec := ts.Second()
+	folderName := strconv.Itoa(year) + "-" + month.String() + "-" + strconv.Itoa(day) + "_" + strconv.Itoa(hour) + "-" +
+		strconv.Itoa(min) + "-" + strconv.Itoa(sec)
+
+	settings.ExecDir += folderName + "/"
+	log.Println(LoggerHdr+"Creating folder named", folderName)
+	err = os.Mkdir(settings.ExecDir, os.ModePerm)
+	if err != nil {
+		log.Println(LoggerHdr + err.Error())
+	}
+
 	genParamsFile(settings)
 
 	// Start ping and tcpdump in background
@@ -201,7 +216,7 @@ func main() {
 
 	// Plotting
 	log.Println(LoggerHdr + "Plotting...")
-	plotterCmd := exec.Command("./plotter", os.Args[1])
+	plotterCmd := exec.Command("./plotter", "-dir="+folderName, os.Args[1])
 	var stdErrPlotter bytes.Buffer
 	plotterCmd.Stderr = &stdErrPlotter
 	err = plotterCmd.Run()

@@ -113,10 +113,11 @@ func openDesiredFiles(execdir string, requestedRuns []int, nameLike ...string) [
 	errMgmt(err)
 	var openFiles []*os.File
 	for _, f := range files {
-		if strings.Contains(f.Name(), nameLike[0]) {
-			fileRun, _ := strconv.Atoi(strings.Split(f.Name(), "-")[0])
+		filename := filenameOnly(f.Name())
+		if strings.Contains(filename, nameLike[0]) {
+			fileRun, _ := strconv.Atoi(strings.Split(filename, "-")[0])
 			// It can contain one or two strings, so it checks if the second value is present and then if it is in the name
-			if len(nameLike) > 1 && !strings.Contains(f.Name(), nameLike[1]) || !intInSlice(fileRun, requestedRuns) {
+			if len(nameLike) > 1 && !strings.Contains(filename, nameLike[1]) || !intInSlice(fileRun, requestedRuns) {
 				continue
 			}
 			file, err := os.Open(execdir + f.Name())
@@ -285,4 +286,8 @@ func rttValues(pairs plotter.XYs) []float64 {
 		rtts = append(rtts, p.Y)
 	}
 	return rtts
+}
+
+func filenameOnly(f string) string {
+	return f[strings.LastIndex(f, "/")+1:]
 }

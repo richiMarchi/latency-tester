@@ -15,6 +15,12 @@ Latest version: `1.0.3`
 |---|---|
 |`<settings-yaml-file>`|Yaml file that defines all the parameters needed for the enhanced client to run|
 
+### Plotter flags
+
+|Param|Description|Default Value|
+|---|---|---|
+|`-dir`|Directory containing the results (current dir if omitted)||
+
 ### Settings file example
 
 The setting file is the same one requested by the enhanced client, but it is possible to add few plotting options

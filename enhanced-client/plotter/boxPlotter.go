@@ -81,7 +81,8 @@ func intXepBoxPlot(ep EndpointData,
 	valuesMap := make(map[int]plotter.Values)
 
 	for _, f := range openFiles {
-		parsedSizeVal, err := strconv.ParseInt(f.Name()[strings.LastIndex(f.Name(), "x")+1:len(f.Name())-4], 10, 32)
+		filename := filenameOnly(f.Name())
+		parsedSizeVal, err := strconv.ParseInt(filename[strings.LastIndex(filename, "x")+1:len(filename)-4], 10, 32)
 		sizeVal := int(parsedSizeVal)
 		errMgmt(err)
 		if intInSlice(sizeVal, msgSizes) {
@@ -123,8 +124,9 @@ func sizeXepBoxPlot(ep EndpointData,
 	valuesMap := make(map[int]plotter.Values)
 
 	for _, f := range openFiles {
+		filename := filenameOnly(f.Name())
 		parsedInterVal, err := strconv.ParseInt(
-			f.Name()[strings.LastIndex(f.Name(), ".i")+2:strings.LastIndex(f.Name(), ".x")], 10, 32)
+			filename[strings.LastIndex(filename, ".i")+2:strings.LastIndex(filename, ".x")], 10, 32)
 		interVal := int(parsedInterVal)
 		errMgmt(err)
 		if intInSlice(interVal, sis) {
@@ -166,7 +168,8 @@ func intXsizeBoxPlot(msgSize int,
 	valuesMap := make(map[string]plotter.Values)
 
 	for _, f := range openFiles {
-		parsedSizeVal := f.Name()[strings.Index(f.Name(), "-")+1 : strings.LastIndex(f.Name(), ".i")]
+		filename := filenameOnly(f.Name())
+		parsedSizeVal := filename[strings.Index(filename, "-")+1 : strings.LastIndex(filename, ".i")]
 		description, present := nameFromDest(parsedSizeVal, &eps)
 		if present {
 			records, _ := csv.NewReader(f).ReadAll()

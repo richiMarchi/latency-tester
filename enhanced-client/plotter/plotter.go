@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -56,15 +57,17 @@ const AxisTicks = 15
 const PlotDirName = "plots/"
 const LoggerHdr = "|-@plotter     - "
 
-func main() {
+var owDir = flag.String("dir", "", "overwrite exec_dir value")
 
-	if len(os.Args) == 1 {
+func main() {
+	flag.Parse()
+	if len(flag.Args()) == 0 {
 		log.Fatal(LoggerHdr + "Settings filename requested")
 	}
 
 	// Settings parsing
 	log.Println(LoggerHdr + "Opening settings file")
-	file, err := ioutil.ReadFile(os.Args[1])
+	file, err := ioutil.ReadFile(flag.Arg(0))
 	if err != nil {
 		log.Fatal(LoggerHdr+"*** ERROR opening settings file:", err)
 	} else {
@@ -88,6 +91,10 @@ func main() {
 	}
 	if settings.RunsInterval == 0 {
 		settings.RunsInterval = int(math.Ceil(float64(settings.RunsStepDuration*combinations) / 60))
+	}
+
+	if *owDir != "" {
+		settings.ExecDir += *owDir + "/"
 	}
 
 	// Create the file in order that it can be totally handled by the host machine
