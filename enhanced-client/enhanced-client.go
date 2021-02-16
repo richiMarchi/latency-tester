@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/lorenzosaino/go-sysctl"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
 	"log"
 	"math"
@@ -68,9 +69,9 @@ func main() {
 	log.Println(LoggerHdr + "Opening settings file")
 	file, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
-		log.Fatal(LoggerHdr+"*** ERROR opening settings file:", err)
+		log.Fatal(LoggerHdr+"*** ERROR reading settings file:", err)
 	} else {
-		log.Println(LoggerHdr + "Settings file successfully opened")
+		log.Println(LoggerHdr + "Settings file successfully read")
 	}
 	var settings Settings
 	log.Println(LoggerHdr + "Reading settings")
@@ -124,6 +125,25 @@ func main() {
 	err = os.Mkdir(settings.ExecDir, os.ModePerm)
 	if err != nil {
 		log.Println(LoggerHdr + err.Error())
+	}
+	log.Println(LoggerHdr + "Copying settings file in the results folder")
+	fromFile, err := os.Open(os.Args[1])
+	if err != nil {
+		log.Fatal(LoggerHdr+"*** ERROR opening settings file:", err)
+	} else {
+		log.Println(LoggerHdr + "Settings file successfully opened")
+	}
+	toFile, err := os.Create(settings.ExecDir + fromFile.Name()[strings.LastIndex(fromFile.Name(), "/")+1:])
+	if err != nil {
+		log.Fatal(LoggerHdr+"*** ERROR creating results folder settings file:", err)
+	} else {
+		log.Println(LoggerHdr + "Results folder settings file successfully created")
+	}
+	_, err = io.Copy(toFile, fromFile)
+	if err != nil {
+		log.Fatal(LoggerHdr+"*** ERROR copying settings file into results folder:", err)
+	} else {
+		log.Println(LoggerHdr + "Settings file successfully copied into results folder")
 	}
 
 	genParamsFile(settings)

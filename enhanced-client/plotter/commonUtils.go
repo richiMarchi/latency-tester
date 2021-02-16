@@ -160,7 +160,7 @@ func generateIntBoxPlotAndLimits(p *plot.Plot,
 	if len(nominals) > 0 {
 		p.NominalX(nominals...)
 	} else {
-		log.Println(LoggerHdr + "WARNING: Some files could be missing")
+		log.Fatal(LoggerHdr + "*** ERROR: Some files could be missing: plotting cannot be done")
 	}
 
 	return p, floats.Min(mins), floats.Max(maxes)
@@ -198,14 +198,14 @@ func generateStringBoxPlotAndLimits(p *plot.Plot,
 	if len(nominals) > 0 {
 		p.NominalX(nominals...)
 	} else {
-		log.Println(LoggerHdr + "WARNING: Some files could be missing")
+		log.Fatal(LoggerHdr + "*** ERROR: Some files could be missing: plotting cannot be done")
 	}
 
 	return p, floats.Min(mins), floats.Max(maxes)
 }
 
-// Return a CDF graph
-func generateCDFPlot(p *plot.Plot, valuesMap *map[int]plotter.Values, percentilesToRemove int) {
+// Return a CDF graph with int as keys of the map
+func generateIntCDFPlot(p *plot.Plot, valuesMap *map[int]plotter.Values, percentilesToRemove int) {
 	// Get map ordered keys
 	keys := make([]int, 0, len(*valuesMap))
 	for k := range *valuesMap {
@@ -214,11 +214,14 @@ func generateCDFPlot(p *plot.Plot, valuesMap *map[int]plotter.Values, percentile
 	sort.Ints(keys)
 
 	var lines []interface{}
+	var mins []float64
+	var maxes []float64
 	for _, k := range keys {
 		// Remove the last two percentiles in order to avoid unreadable plots
 		sort.Float64s((*valuesMap)[k])
 		toRemove := len((*valuesMap)[k]) / 100
-		(*valuesMap)[k] = (*valuesMap)[k][:len((*valuesMap)[k])-toRemove*percentilesToRemove]
+		mins = append(mins, (*valuesMap)[k][toRemove*percentilesToRemove])
+		maxes = append(maxes, (*valuesMap)[k][len((*valuesMap)[k])-toRemove*percentilesToRemove-1])
 		var toAdd plotter.XYs
 		for i, y := range yValsCDF(len((*valuesMap)[k])) {
 			toAdd = append(toAdd, plotter.XY{X: (*valuesMap)[k][i], Y: y})
@@ -228,6 +231,39 @@ func generateCDFPlot(p *plot.Plot, valuesMap *map[int]plotter.Values, percentile
 	}
 	err := plotutil.AddLines(p, lines...)
 	errMgmt(err)
+	p.X.Min = floats.Min(mins)
+	p.X.Max = floats.Max(maxes)
+}
+
+// Return a CDF graph with string as keys of the map
+func generateStringCDFPlot(p *plot.Plot, valuesMap *map[string]plotter.Values, percentilesToRemove int) {
+	// Get map ordered keys
+	keys := make([]string, 0, len(*valuesMap))
+	for k := range *valuesMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var lines []interface{}
+	var mins []float64
+	var maxes []float64
+	for _, k := range keys {
+		// Remove the last two percentiles in order to avoid unreadable plots
+		sort.Float64s((*valuesMap)[k])
+		toRemove := len((*valuesMap)[k]) / 100
+		mins = append(mins, (*valuesMap)[k][toRemove*percentilesToRemove])
+		maxes = append(maxes, (*valuesMap)[k][len((*valuesMap)[k])-toRemove*percentilesToRemove-1])
+		var toAdd plotter.XYs
+		for i, y := range yValsCDF(len((*valuesMap)[k])) {
+			toAdd = append(toAdd, plotter.XY{X: (*valuesMap)[k][i], Y: y})
+		}
+		lines = append(lines, k)
+		lines = append(lines, toAdd)
+	}
+	err := plotutil.AddLines(p, lines...)
+	errMgmt(err)
+	p.X.Min = floats.Min(mins)
+	p.X.Max = floats.Max(maxes)
 }
 
 // Return the lengths of the elements depending on the object type
