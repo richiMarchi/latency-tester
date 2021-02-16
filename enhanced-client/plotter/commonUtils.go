@@ -160,7 +160,7 @@ func generateIntBoxPlotAndLimits(p *plot.Plot,
 	if len(nominals) > 0 {
 		p.NominalX(nominals...)
 	} else {
-		log.Println(LoggerHdr + "WARNING: Some files could be missing")
+		log.Fatal(LoggerHdr + "*** ERROR: Some files could be missing: plotting cannot be done")
 	}
 
 	return p, floats.Min(mins), floats.Max(maxes)
@@ -198,7 +198,7 @@ func generateStringBoxPlotAndLimits(p *plot.Plot,
 	if len(nominals) > 0 {
 		p.NominalX(nominals...)
 	} else {
-		log.Println(LoggerHdr + "WARNING: Some files could be missing")
+		log.Fatal(LoggerHdr + "*** ERROR: Some files could be missing: plotting cannot be done")
 	}
 
 	return p, floats.Min(mins), floats.Max(maxes)
