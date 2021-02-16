@@ -10,8 +10,10 @@ import (
 	"math"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -212,6 +214,11 @@ func main() {
 				time.Sleep(waitTime)
 			}
 		}
+		time.Sleep(5 * time.Second)
+		runtime.GC()
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+		log.Printf("\nHeapAlloc = %v B\nNumGC = %v\n\n", m.HeapAlloc, m.NumGC)
 	}
 	wg.Wait()
 
@@ -229,6 +236,11 @@ func main() {
 	log.Print(LoggerHdr + "Plotting Logs:\n" + stdErrPlotter.String())
 	stopHealthChecker <- os.Interrupt
 	log.Println(LoggerHdr + "Everything's complete!")
+	time.Sleep(5 * time.Second)
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	log.Printf("\nHeapAlloc = %v B\nNumGC = %v\n\n", m.HeapAlloc, m.NumGC)
+	time.Sleep(time.Second)
 }
 
 func genParamsFile(settings Settings) {
