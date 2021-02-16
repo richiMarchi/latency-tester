@@ -49,12 +49,12 @@ func typedBoxPlots(settings Settings, objectType int, wg *sync.WaitGroup) {
 	if settings.RttMin != 0 {
 		standardMin = settings.RttMin
 	} else {
-		standardMin = min - 1
+		standardMin = min
 	}
 	if settings.RttMax != 0 {
 		standardMax = settings.RttMax
 	} else {
-		standardMax = max + 3
+		standardMax = max
 	}
 	if !settings.EqualizationDisabled {
 		adjustMinMaxY(plots, rows, cols, standardMin, standardMax)

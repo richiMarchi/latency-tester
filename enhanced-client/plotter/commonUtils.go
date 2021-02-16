@@ -152,8 +152,8 @@ func generateIntBoxPlotAndLimits(p *plot.Plot,
 		boxplot, err := plotter.NewBoxPlot(w, position, (*valuesMap)[k])
 		errMgmt(err)
 		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
-		mins = append(mins, boxplot.AdjLow)
-		maxes = append(maxes, boxplot.AdjHigh)
+		mins = append(mins, boxplot.Min)
+		maxes = append(maxes, boxplot.Max)
 		position += 1
 		p.Add(boxplot)
 	}
@@ -190,8 +190,8 @@ func generateStringBoxPlotAndLimits(p *plot.Plot,
 		boxplot, err := plotter.NewBoxPlot(w, position, (*valuesMap)[k])
 		errMgmt(err)
 		nominals = append(nominals, k+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
-		mins = append(mins, boxplot.AdjLow)
-		maxes = append(maxes, boxplot.AdjHigh)
+		mins = append(mins, boxplot.Min)
+		maxes = append(maxes, boxplot.Max)
 		position += 1
 		p.Add(boxplot)
 	}
