@@ -6,10 +6,8 @@ import (
 	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/plotutil"
 	"log"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -102,7 +100,7 @@ func intXepCDF(
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 
-	generateCDFPlot(p, &valuesMap, percentilesToRemove)
+	generateIntCDFPlot(p, &valuesMap, percentilesToRemove)
 
 	return p
 }
@@ -150,7 +148,7 @@ func sizeXepCDF(
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "B"
 
-	generateCDFPlot(p, &valuesMap, percentilesToRemove)
+	generateIntCDFPlot(p, &valuesMap, percentilesToRemove)
 
 	return p
 }
@@ -194,28 +192,7 @@ func intXsizeCDF(
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "B"
 
-	// Get map ordered keys
-	keys := make([]string, 0, len(valuesMap))
-	for k := range valuesMap {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	var lines []interface{}
-	for _, k := range keys {
-		// Remove the last two percentiles in order to avoid unreadable plots
-		sort.Float64s(valuesMap[k])
-		toRemove := len(valuesMap[k]) / 100
-		valuesMap[k] = valuesMap[k][:len(valuesMap[k])-toRemove*percentilesToRemove]
-		var toAdd plotter.XYs
-		for i, y := range yValsCDF(len(valuesMap[k])) {
-			toAdd = append(toAdd, plotter.XY{X: valuesMap[k][i], Y: y})
-		}
-		lines = append(lines, k)
-		lines = append(lines, toAdd)
-	}
-	err = plotutil.AddLines(p, lines...)
-	errMgmt(err)
+	generateStringCDFPlot(p, &valuesMap, percentilesToRemove)
 
 	return p
 }
