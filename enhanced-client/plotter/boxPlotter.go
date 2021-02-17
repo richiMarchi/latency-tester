@@ -104,6 +104,7 @@ func intXepBoxPlot(ep EndpointData,
 	p.Y.Label.Text = "E2E RTT (ms)"
 	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
+	p.Title.Font.Size = 20
 
 	return generateIntBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
 }
@@ -149,6 +150,7 @@ func sizeXepBoxPlot(ep EndpointData,
 	p.Y.Label.Text = "E2E RTT (ms)"
 	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "B"
+	p.Title.Font.Size = 20
 
 	return generateIntBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
 }
@@ -191,6 +193,7 @@ func intXsizeBoxPlot(msgSize int,
 	p.Y.Label.Text = "E2E RTT (ms)"
 	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "B"
+	p.Title.Font.Size = 20
 
 	return generateStringBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
 }

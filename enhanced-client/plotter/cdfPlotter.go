@@ -99,6 +99,7 @@ func intXepCDF(
 	p.Y.Label.Text = "P(x)"
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
+	p.Title.Font.Size = 20
 
 	generateIntCDFPlot(p, &valuesMap, percentilesToRemove)
 
@@ -147,6 +148,7 @@ func sizeXepCDF(
 	p.Y.Label.Text = "P(x)"
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "B"
+	p.Title.Font.Size = 20
 
 	generateIntCDFPlot(p, &valuesMap, percentilesToRemove)
 
@@ -191,6 +193,7 @@ func intXsizeCDF(
 	p.Y.Label.Text = "P(x)"
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "B"
+	p.Title.Font.Size = 20
 
 	generateStringCDFPlot(p, &valuesMap, percentilesToRemove)
 
