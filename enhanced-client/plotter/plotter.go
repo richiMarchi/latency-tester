@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
 	"log"
 	"math"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -102,6 +104,25 @@ func main() {
 	err = os.Mkdir(settings.ExecDir+PlotDirName, os.ModePerm)
 	if err != nil {
 		log.Println(LoggerHdr + err.Error())
+	}
+	log.Println(LoggerHdr + "Copying settings file in the plots folder")
+	fromFile, err := os.Open(flag.Arg(0))
+	if err != nil {
+		log.Fatal(LoggerHdr+"*** ERROR opening settings file:", err)
+	} else {
+		log.Println(LoggerHdr + "Settings file successfully opened")
+	}
+	toFile, err := os.Create(settings.ExecDir + PlotDirName + fromFile.Name()[strings.LastIndex(fromFile.Name(), "/")+1:])
+	if err != nil {
+		log.Fatal(LoggerHdr+"*** ERROR creating plots folder settings file:", err)
+	} else {
+		log.Println(LoggerHdr + "Plots folder settings file successfully created")
+	}
+	_, err = io.Copy(toFile, fromFile)
+	if err != nil {
+		log.Fatal(LoggerHdr+"*** ERROR copying settings file into plots folder:", err)
+	} else {
+		log.Println(LoggerHdr + "Settings file successfully copied into plots folder")
 	}
 
 	log.Println(LoggerHdr + "Creating README file")
