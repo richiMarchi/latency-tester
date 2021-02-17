@@ -148,12 +148,11 @@ func generateIntBoxPlotAndLimits(p *plot.Plot,
 		// Remove the first three and last three percentiles in order to avoid unreadable plots
 		sort.Float64s((*valuesMap)[k])
 		toRemove := len((*valuesMap)[k]) / 100
-		(*valuesMap)[k] = (*valuesMap)[k][toRemove*percentilesToRemove : len((*valuesMap)[k])-toRemove*percentilesToRemove]
 		boxplot, err := plotter.NewBoxPlot(w, position, (*valuesMap)[k])
 		errMgmt(err)
 		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
-		mins = append(mins, boxplot.Min)
-		maxes = append(maxes, boxplot.Max)
+		mins = append(mins, (*valuesMap)[k][toRemove*percentilesToRemove])
+		maxes = append(maxes, (*valuesMap)[k][len((*valuesMap)[k])-toRemove*percentilesToRemove-1])
 		position += 1
 		p.Add(boxplot)
 	}
@@ -186,12 +185,11 @@ func generateStringBoxPlotAndLimits(p *plot.Plot,
 		// Remove the first three and last three percentiles in order to avoid unreadable plots
 		sort.Float64s((*valuesMap)[k])
 		toRemove := len((*valuesMap)[k]) / 100
-		(*valuesMap)[k] = (*valuesMap)[k][toRemove*percentilesToRemove : len((*valuesMap)[k])-toRemove*percentilesToRemove]
 		boxplot, err := plotter.NewBoxPlot(w, position, (*valuesMap)[k])
 		errMgmt(err)
 		nominals = append(nominals, k+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
-		mins = append(mins, boxplot.Min)
-		maxes = append(maxes, boxplot.Max)
+		mins = append(mins, (*valuesMap)[k][toRemove*percentilesToRemove])
+		maxes = append(maxes, (*valuesMap)[k][len((*valuesMap)[k])-toRemove*percentilesToRemove-1])
 		position += 1
 		p.Add(boxplot)
 	}

@@ -364,6 +364,9 @@ func pingThread(wg *sync.WaitGroup, execdir string, destination PingData, interv
 	}
 	defer osRtt.Close()
 	for !*kill {
+		if interval == 0 {
+			interval = 1
+		}
 		pingerCmd := exec.Command("ping", destination.Ip, "-i", strconv.Itoa(interval), "-D")
 
 		// Handle stop

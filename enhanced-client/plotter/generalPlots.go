@@ -13,6 +13,7 @@ import (
 	"gonum.org/v1/plot/vg/draw"
 	"gonum.org/v1/plot/vg/vgpdf"
 	"log"
+	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -74,11 +75,14 @@ func PingPlotter(settings Settings, wg *sync.WaitGroup) {
 			return values[i].Y < values[j].Y
 		})
 		toRemove := len(values) / 100
-		values = values[:len(values)-toRemove*settings.PercentilesToRemove]
+		min := values[toRemove*settings.PercentilesToRemove].Y
+		max := values[len(values)-toRemove*settings.PercentilesToRemove-1].Y
 		sort.Slice(values, func(i, j int) bool {
 			return values[i].X < values[j].X
 		})
 		err = plotutil.AddLines(p, "Ping RTT", values)
+		p.Y.Min = min
+		p.Y.Max = max
 		p.Draw(draw.New(pdfToSave))
 	}
 
@@ -155,13 +159,24 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 				return values[i].Y < values[j].Y
 			})
 			toRemove := len(values) / 100
-			values = values[:len(values)-toRemove*settings.PercentilesToRemove]
+			sort.Slice(scatterData, func(i, j int) bool {
+				return scatterData[i].Y < scatterData[j].Y
+			})
+			min := values[toRemove*settings.PercentilesToRemove].Y
+			max := values[len(values)-toRemove*settings.PercentilesToRemove-1].Y
+			if len(scatterData) > 0 {
+				min = math.Min(min, scatterData[0].Y)
+				max = math.Max(max, scatterData[len(scatterData)-1].Y)
+			}
 			sort.Slice(values, func(i, j int) bool {
 				return values[i].X < values[j].X
 			})
 			err = plotutil.AddLines(p, "ACK RTT", values)
-			scatterPlot, err := plotter.NewScatter(scatterData)
+			scatterPlot, _ := plotter.NewScatter(scatterData)
+			scatterPlot.Radius = vg.Length(10)
 			p.Add(scatterPlot)
+			p.Y.Min = min
+			p.Y.Max = max
 			if !(p.X.Max-p.X.Min < (float64(settings.RunsStepDuration) - (float64(settings.RunsStepDuration) / 10))) {
 				if streamCounter != 0 {
 					pdfToSave.NextPage()
@@ -302,7 +317,8 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 					return values[i].Y < values[j].Y
 				})
 				toRemove := len(values) / 100
-				values = values[:len(values)-toRemove*settings.PercentilesToRemove]
+				min := values[toRemove*settings.PercentilesToRemove].Y
+				max := values[len(values)-toRemove*settings.PercentilesToRemove-1].Y
 				sort.Slice(values, func(i, j int) bool {
 					return values[i].X < values[j].X
 				})
@@ -312,9 +328,13 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 				}
 				if settings.RttMin != 0 {
 					p.Y.Min = settings.RttMin
+				} else {
+					p.Y.Min = min
 				}
 				if settings.RttMax != 0 {
 					p.Y.Max = settings.RttMax
+				} else {
+					p.Y.Max = max
 				}
 				p.Draw(draw.New(pdfToSave))
 				mean, stdDev := stat.MeanStdDev(rttValues(values), nil)
