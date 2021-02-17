@@ -57,6 +57,7 @@ const (
 
 const AxisTicks = 15
 const PlotDirName = "plots/"
+const DataDirName = "raw-data/"
 const LoggerHdr = "|-@plotter     - "
 
 var owDir = flag.String("dir", "", "overwrite exec_dir value")

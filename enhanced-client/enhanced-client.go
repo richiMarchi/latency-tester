@@ -51,6 +51,8 @@ type Settings struct {
 	ExecDir           string         `yaml:"exec_dir"`
 }
 
+const DataDirName = "raw-data/"
+
 func main() {
 
 	const LoggerHdr = "@main          - "
@@ -143,6 +145,12 @@ func main() {
 	} else {
 		log.Println(LoggerHdr + "Settings file successfully copied into results folder")
 	}
+	// Create the file in order that it can be totally handled by the host machine
+	log.Println(LoggerHdr + "Creating 'plots' folder")
+	err = os.Mkdir(settings.ExecDir+DataDirName, os.ModePerm)
+	if err != nil {
+		log.Println(LoggerHdr + err.Error())
+	}
 
 	genParamsFile(settings)
 
@@ -152,7 +160,7 @@ func main() {
 	wg.Add(len(settings.PingDestinations))
 	killPing := false
 	for _, dest := range settings.PingDestinations {
-		go pingThread(&wg, settings.ExecDir, dest, settings.PingInterval, stopPing, &killPing)
+		go pingThread(&wg, settings.ExecDir+DataDirName, dest, settings.PingInterval, stopPing, &killPing)
 	}
 
 	for i := 1; i <= settings.Runs; i++ {
@@ -161,7 +169,7 @@ func main() {
 			if iperfData.Port == "" {
 				iperfData.Port = "5201"
 			}
-			iperfer(i, settings.ExecDir, iperfData)
+			iperfer(i, settings.ExecDir+DataDirName, iperfData)
 		}
 		// Handle Tcpdump
 		stopTcpdump := make(chan os.Signal, 1)
@@ -170,7 +178,7 @@ func main() {
 			wg.Add(1)
 			localIp := getOutboundIP()
 			log.Println(LoggerHdr + "Outbound IP: " + localIp)
-			go tcpDumper(i, &wg, stopTcpdump, localIp, settings.ExecDir)
+			go tcpDumper(i, &wg, stopTcpdump, localIp, settings.ExecDir+DataDirName)
 			time.Sleep(time.Second)
 		} else {
 			log.Println(LoggerHdr + "Tcpdump is not requested")
@@ -191,8 +199,9 @@ func main() {
 						"-requestPayload="+strconv.Itoa(size),
 						"-responsePayload="+strconv.Itoa(settings.ResponseSize),
 						"-tls="+strconv.FormatBool(settings.TlsEnabled),
-						"-log="+settings.ExecDir+strconv.Itoa(i)+"-"+strings.ReplaceAll(addr.Destination, ":", "_")+".i"+strconv.Itoa(inter)+
-							".x"+strconv.Itoa(size), addr.Destination)
+						"-log="+settings.ExecDir+DataDirName+strconv.Itoa(i)+"-"+strings.ReplaceAll(addr.Destination, ":", "_")+
+							".i"+strconv.Itoa(inter)+".x"+strconv.Itoa(size),
+						addr.Destination)
 					var stdErrClient bytes.Buffer
 					clientCmd.Stderr = &stdErrClient
 					err = clientCmd.Run()
@@ -330,7 +339,7 @@ func iperfer(run int, execdir string, iperfData IperfData) {
 	iperfRes, err := exec.Command(
 		"timeout", "10", "iperf3", "-c", iperfData.Ip, "-p", iperfData.Port, "-t", "5").Output()
 	if err != nil {
-		log.Fatal(LoggerHdr+"*** ERROR running iperf towards "+iperfData.Name+":", err)
+		log.Println(LoggerHdr+"*** ERROR running iperf towards "+iperfData.Name+":", err)
 	} else {
 		log.Println(LoggerHdr+"Iperf towards", iperfData.Name, "complete!")
 	}

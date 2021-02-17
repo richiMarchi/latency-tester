@@ -109,7 +109,7 @@ func adjustMinMaxX(plots [][]*plot.Plot, rows, cols int, min, max float64) {
 
 // Open the files with the name containing the nameLike strings
 func openDesiredFiles(execdir string, requestedRuns []int, nameLike ...string) []*os.File {
-	files, err := ioutil.ReadDir(execdir)
+	files, err := ioutil.ReadDir(execdir + DataDirName)
 	errMgmt(err)
 	var openFiles []*os.File
 	for _, f := range files {
@@ -120,7 +120,7 @@ func openDesiredFiles(execdir string, requestedRuns []int, nameLike ...string) [
 			if len(nameLike) > 1 && !strings.Contains(filename, nameLike[1]) || !intInSlice(fileRun, requestedRuns) {
 				continue
 			}
-			file, err := os.Open(execdir + f.Name())
+			file, err := os.Open(execdir + DataDirName + f.Name())
 			errMgmt(err)
 			openFiles = append(openFiles, file)
 		}

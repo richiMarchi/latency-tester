@@ -37,7 +37,7 @@ func PingPlotter(settings Settings, wg *sync.WaitGroup) {
 		}
 
 		// Open the desired file
-		file, err := os.Open(settings.ExecDir + "ping_" + dest.Name + ".txt")
+		file, err := os.Open(settings.ExecDir + DataDirName + "ping_" + dest.Name + ".txt")
 		errMgmt(err)
 
 		p, err := plot.New()
@@ -93,7 +93,7 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 	log.Println(LoggerHdr+"Plotting TCP run #", run)
 
 	// Open the desired file
-	file, err := os.Open(settings.ExecDir + strconv.Itoa(run) + "-tcpdump_report.csv")
+	file, err := os.Open(settings.ExecDir + DataDirName + strconv.Itoa(run) + "-tcpdump_report.csv")
 	errMgmt(err)
 	params, err := os.Open(settings.ExecDir + "parameters.txt")
 	errMgmt(err)
@@ -220,7 +220,7 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 				var lastOfRun float64
 				var runTime string
 				for runIndex, run := range requestedRuns {
-					file, err := os.Open(settings.ExecDir + strconv.Itoa(run) + "-" +
+					file, err := os.Open(settings.ExecDir + DataDirName + strconv.Itoa(run) + "-" +
 						strings.ReplaceAll(addr.Destination, ":", "_") + ".i" + strconv.Itoa(inter) + ".x" +
 						strconv.Itoa(size) + ".csv")
 					if err == nil {
