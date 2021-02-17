@@ -46,6 +46,8 @@ type Settings struct {
 	EqualizationDisabled bool           `yaml:"equalization_disabled"`
 	RttMin               float64        `yaml:"rtt_min"`
 	RttMax               float64        `yaml:"rtt_max"`
+	WhiskerMin           int            `yaml:"whisker_min"`
+	WhiskerMax           int            `yaml:"whisker_max"`
 	RunsToPlot           []int          `yaml:"runs_to_plot"`
 }
 

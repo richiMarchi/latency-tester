@@ -131,7 +131,9 @@ func openDesiredFiles(execdir string, requestedRuns []int, nameLike ...string) [
 // Return a BoxPlot graph and its min and max values with int as key of the map
 func generateIntBoxPlotAndLimits(p *plot.Plot,
 	valuesMap *map[int]plotter.Values,
-	percentilesToRemove int) (*plot.Plot, float64, float64) {
+	percentilesToRemove int,
+	whiskerMin int,
+	whiskerMax int) (*plot.Plot, float64, float64) {
 	// Get map ordered keys
 	keys := make([]int, 0, len(*valuesMap))
 	for k := range *valuesMap {
@@ -150,6 +152,13 @@ func generateIntBoxPlotAndLimits(p *plot.Plot,
 		toRemove := len((*valuesMap)[k]) / 100
 		boxplot, err := plotter.NewBoxPlot(w, position, (*valuesMap)[k])
 		errMgmt(err)
+		if whiskerMin != 0 {
+			boxplot.AdjLow = (*valuesMap)[k][toRemove*whiskerMin]
+		}
+		if whiskerMax != 0 {
+			boxplot.AdjHigh = (*valuesMap)[k][len((*valuesMap)[k])-toRemove*(100-whiskerMax)-1]
+		}
+		removeOutsideBetweenWhiskers(boxplot)
 		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
 		mins = append(mins, (*valuesMap)[k][toRemove*percentilesToRemove])
 		maxes = append(maxes, (*valuesMap)[k][len((*valuesMap)[k])-toRemove*percentilesToRemove-1])
@@ -168,7 +177,9 @@ func generateIntBoxPlotAndLimits(p *plot.Plot,
 // Return a BoxPlot graph and its min and max values with string as key of the map
 func generateStringBoxPlotAndLimits(p *plot.Plot,
 	valuesMap *map[string]plotter.Values,
-	percentilesToRemove int) (*plot.Plot, float64, float64) {
+	percentilesToRemove int,
+	whiskerMin int,
+	whiskerMax int) (*plot.Plot, float64, float64) {
 	// Get map ordered keys
 	keys := make([]string, 0, len(*valuesMap))
 	for k := range *valuesMap {
@@ -187,6 +198,13 @@ func generateStringBoxPlotAndLimits(p *plot.Plot,
 		toRemove := len((*valuesMap)[k]) / 100
 		boxplot, err := plotter.NewBoxPlot(w, position, (*valuesMap)[k])
 		errMgmt(err)
+		if whiskerMin != 0 {
+			boxplot.AdjLow = (*valuesMap)[k][toRemove*whiskerMin]
+		}
+		if whiskerMax != 0 {
+			boxplot.AdjHigh = (*valuesMap)[k][len((*valuesMap)[k])-toRemove*(100-whiskerMax)-1]
+		}
+		removeOutsideBetweenWhiskers(boxplot)
 		nominals = append(nominals, k+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
 		mins = append(mins, (*valuesMap)[k][toRemove*percentilesToRemove])
 		maxes = append(maxes, (*valuesMap)[k][len((*valuesMap)[k])-toRemove*percentilesToRemove-1])
@@ -324,4 +342,15 @@ func rttValues(pairs plotter.XYs) []float64 {
 
 func filenameOnly(f string) string {
 	return f[strings.LastIndex(f, "/")+1:]
+}
+
+func removeOutsideBetweenWhiskers(bp *plotter.BoxPlot) {
+	var indexesToKeep []int
+	for _, elem := range bp.Outside {
+		yVal := bp.Value(elem)
+		if yVal < bp.AdjLow || yVal > bp.AdjHigh {
+			indexesToKeep = append(indexesToKeep, elem)
+		}
+	}
+	bp.Outside = indexesToKeep
 }

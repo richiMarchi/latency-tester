@@ -26,15 +26,17 @@ func typedBoxPlots(settings Settings, objectType int, wg *sync.WaitGroup) {
 			switch objectType {
 			case ENDPOINTS:
 				plots[i][j], tmpMin, tmpMax = intXsizeBoxPlot(settings.MsgSizes[i], settings.Intervals[j], settings.Endpoints,
-					settings.ExecDir, settings.PercentilesToRemove, requestedSlice(settings))
+					settings.ExecDir, settings.PercentilesToRemove, settings.WhiskerMin, settings.WhiskerMax,
+					requestedSlice(settings))
 				filename = "endpointsBoxPlot"
 			case INTERVALS:
 				plots[i][j], tmpMin, tmpMax = sizeXepBoxPlot(settings.Endpoints[i], settings.MsgSizes[j], settings.Intervals,
-					settings.ExecDir, settings.PercentilesToRemove, requestedSlice(settings))
+					settings.ExecDir, settings.PercentilesToRemove, settings.WhiskerMin, settings.WhiskerMax, requestedSlice(settings))
 				filename = "intervalsBoxPlot"
 			case SIZES:
 				plots[i][j], tmpMin, tmpMax = intXepBoxPlot(settings.Endpoints[i], settings.Intervals[j], settings.MsgSizes,
-					settings.ExecDir, settings.PercentilesToRemove, requestedSlice(settings))
+					settings.ExecDir, settings.PercentilesToRemove, settings.WhiskerMin, settings.WhiskerMax,
+					requestedSlice(settings))
 				filename = "sizesBoxPlot"
 			default:
 				panic("Wrong objectType in loop elements: only values 0,1 and 2 are allowed")
@@ -70,6 +72,8 @@ func intXepBoxPlot(ep EndpointData,
 	msgSizes []int,
 	execdir string,
 	percentilesToRemove int,
+	whiskerMin int,
+	whiskerMax int,
 	requestedRuns []int) (*plot.Plot, float64, float64) {
 	log.Println(LoggerHdr + "Plot for " + ep.Description + " and send interval " + strconv.Itoa(si))
 	p, err := plot.New()
@@ -106,7 +110,7 @@ func intXepBoxPlot(ep EndpointData,
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
 	p.Title.Font.Size = 20
 
-	return generateIntBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
+	return generateIntBoxPlotAndLimits(p, &valuesMap, percentilesToRemove, whiskerMin, whiskerMax)
 }
 
 // Return a boxplot of the e2e rtt of the intervals given the size and the endpoint
@@ -115,6 +119,8 @@ func sizeXepBoxPlot(ep EndpointData,
 	sis []int,
 	execdir string,
 	percentilesToRemove int,
+	whiskerMin int,
+	whiskerMax int,
 	requestedRuns []int) (*plot.Plot, float64, float64) {
 	log.Println(LoggerHdr + "Plot for message size " + strconv.Itoa(msgSize) + " and endpoint " + ep.Description)
 	p, err := plot.New()
@@ -152,7 +158,7 @@ func sizeXepBoxPlot(ep EndpointData,
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "B"
 	p.Title.Font.Size = 20
 
-	return generateIntBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
+	return generateIntBoxPlotAndLimits(p, &valuesMap, percentilesToRemove, whiskerMin, whiskerMax)
 }
 
 // Return a boxplot of the e2e rtt of the endpoints given the interval and the size
@@ -161,6 +167,8 @@ func intXsizeBoxPlot(msgSize int,
 	eps []EndpointData,
 	execdir string,
 	percentilesToRemove int,
+	whiskerMin int,
+	whiskerMax int,
 	requestedRuns []int) (*plot.Plot, float64, float64) {
 	log.Println(LoggerHdr + "Plot for interval " + strconv.Itoa(si) + " and message size " + strconv.Itoa(msgSize))
 	p, err := plot.New()
@@ -195,5 +203,5 @@ func intXsizeBoxPlot(msgSize int,
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "B"
 	p.Title.Font.Size = 20
 
-	return generateStringBoxPlotAndLimits(p, &valuesMap, percentilesToRemove)
+	return generateStringBoxPlotAndLimits(p, &valuesMap, percentilesToRemove, whiskerMin, whiskerMax)
 }

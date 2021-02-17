@@ -7,7 +7,7 @@ docker pull richimarchi/latency-tester_plotter
 docker run --rm -v <local-log-folder>:/execdir richimarchi/latency-tester_plotter /execdir/<settings-yaml-file>
 ```
 
-Latest version: `1.0.4`
+Latest version: `1.0.5`
 
 ### Required input parameters
 
@@ -45,6 +45,10 @@ equalization_disabled: false
 rtt_min: 10
 # The maximum value in the plot for the RTT (automatically obtained if omitted or equal to 0)
 rtt_max: 20
+# The boxplot min whisker percentile (default 1.5x interquartile distance if omitted)
+#whisker_min: 10
+# The boxplot max whisker percentile (default 1.5x interquartile distance if omitted)
+#whisker_max: 90
 # The runs we selectively want to plot (default all runs if omitted)
 runs_to_plot:
 - 1
