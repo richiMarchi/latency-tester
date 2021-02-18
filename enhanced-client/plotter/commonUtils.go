@@ -152,13 +152,7 @@ func generateIntBoxPlotAndLimits(p *plot.Plot,
 		toRemove := len((*valuesMap)[k]) / 100
 		boxplot, err := plotter.NewBoxPlot(w, position, (*valuesMap)[k])
 		errMgmt(err)
-		if whiskerMin != 0 {
-			boxplot.AdjLow = (*valuesMap)[k][toRemove*whiskerMin]
-		}
-		if whiskerMax != 0 {
-			boxplot.AdjHigh = (*valuesMap)[k][len((*valuesMap)[k])-toRemove*(100-whiskerMax)-1]
-		}
-		removeOutsideBetweenWhiskers(boxplot)
+		handleWhiskerAndOutliers(boxplot, whiskerMin, whiskerMax, (*valuesMap)[k], toRemove)
 		nominals = append(nominals, strconv.Itoa(k)+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
 		mins = append(mins, (*valuesMap)[k][toRemove*percentilesToRemove])
 		maxes = append(maxes, (*valuesMap)[k][len((*valuesMap)[k])-toRemove*percentilesToRemove-1])
@@ -198,13 +192,7 @@ func generateStringBoxPlotAndLimits(p *plot.Plot,
 		toRemove := len((*valuesMap)[k]) / 100
 		boxplot, err := plotter.NewBoxPlot(w, position, (*valuesMap)[k])
 		errMgmt(err)
-		if whiskerMin != 0 {
-			boxplot.AdjLow = (*valuesMap)[k][toRemove*whiskerMin]
-		}
-		if whiskerMax != 0 {
-			boxplot.AdjHigh = (*valuesMap)[k][len((*valuesMap)[k])-toRemove*(100-whiskerMax)-1]
-		}
-		removeOutsideBetweenWhiskers(boxplot)
+		handleWhiskerAndOutliers(boxplot, whiskerMin, whiskerMax, (*valuesMap)[k], toRemove)
 		nominals = append(nominals, k+" (Median:"+strconv.FormatFloat(boxplot.Median, 'f', 2, 64)+")")
 		mins = append(mins, (*valuesMap)[k][toRemove*percentilesToRemove])
 		maxes = append(maxes, (*valuesMap)[k][len((*valuesMap)[k])-toRemove*percentilesToRemove-1])
@@ -344,13 +332,43 @@ func filenameOnly(f string) string {
 	return f[strings.LastIndex(f, "/")+1:]
 }
 
-func removeOutsideBetweenWhiskers(bp *plotter.BoxPlot) {
-	var indexesToKeep []int
-	for _, elem := range bp.Outside {
-		yVal := bp.Value(elem)
-		if yVal < bp.AdjLow || yVal > bp.AdjHigh {
-			indexesToKeep = append(indexesToKeep, elem)
+func handleWhiskerAndOutliers(boxplot *plotter.BoxPlot,
+	whiskerMin int,
+	whiskerMax int,
+	values plotter.Values,
+	toRemove int) {
+	var updatedOutliers []int
+	if whiskerMin != 0 {
+		boxplot.AdjLow = values[toRemove*whiskerMin]
+		for counter := 0; counter < toRemove*whiskerMin; counter++ {
+			updatedOutliers = append(updatedOutliers, counter)
+		}
+	} else {
+		for counter, indexElem := range boxplot.Outside {
+			if counter == 0 && indexElem != 0 {
+				break
+			}
+			updatedOutliers = append(updatedOutliers, indexElem)
+			if counter+1 < len(boxplot.Outside) && boxplot.Outside[counter+1] != (indexElem+1) {
+				break
+			}
 		}
 	}
-	bp.Outside = indexesToKeep
+	if whiskerMax != 0 {
+		boxplot.AdjHigh = values[len(values)-toRemove*(100-whiskerMax)-1]
+		for counter := len(values) - toRemove*(100-whiskerMax); counter < len(values); counter++ {
+			updatedOutliers = append(updatedOutliers, counter)
+		}
+	} else {
+		for counter, indexElem := range boxplot.Outside {
+			if indexElem == 0 || counter != 0 && (indexElem-1) == boxplot.Outside[counter-1] {
+				continue
+			}
+			for lateCounter := counter; lateCounter < len(boxplot.Outside); lateCounter++ {
+				updatedOutliers = append(updatedOutliers, boxplot.Outside[lateCounter])
+			}
+			break
+		}
+	}
+	boxplot.Outside = updatedOutliers
 }

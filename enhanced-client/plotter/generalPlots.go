@@ -191,7 +191,7 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 		// Convert values to ms
 		point := plotter.XY{X: ts - firstTs, Y: rtt * 1000}
 		values = append(values, point)
-		if row[3] != "" {
+		if len(row) > 3 && row[3] != "" {
 			scatterData = append(scatterData, point)
 		}
 	}
