@@ -289,13 +289,17 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 						box.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 						box.Title.Text = "E2E Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
 						box.Title.Font.Size = 20
-						boxplot, _, _ := generateStringBoxPlotAndLimits(
+						boxplot, hourMin, hourMax := generateStringBoxPlotAndLimits(
 							box, &hourlyMap, settings.PercentilesToRemove, settings.WhiskerMin, settings.WhiskerMax)
 						if settings.RttMin != 0 {
 							boxplot.Y.Min = settings.RttMin
+						} else {
+							boxplot.Y.Min = hourMin
 						}
 						if settings.RttMax != 0 {
 							boxplot.Y.Max = settings.RttMax
+						} else {
+							boxplot.Y.Max = hourMax
 						}
 						boxplot.Draw(draw.New(hourlyPdfToSave))
 						hourlyMap = make(map[string]plotter.Values)
