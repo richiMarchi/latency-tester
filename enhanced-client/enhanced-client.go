@@ -412,14 +412,15 @@ func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal, localIp, execdir s
 		log.Println(LoggerHdr + "Tcpdump output file for run " + strconv.Itoa(run) + " successfully created")
 	}
 	defer tcpRtt.Close()
-	tcpRtt.WriteString("#frame-timestamp,tcp-ack-rtt,tcp-stream-id,retransmission\n")
+	tcpRtt.WriteString("#frame-timestamp,tcp-ack-rtt,tcp-stream-id,retransmission,ip-dst\n")
 	tcpdumpCmd := exec.Command("tshark",
 		"-ni", "any",
-		"-Y", "tcp.analysis.ack_rtt and ip.dst=="+localIp,
+		"-Y", "(tcp.analysis.ack_rtt and ip.dst=="+localIp+") or tcp.analysis.retransmission",
 		"-e", "frame.time_epoch",
 		"-e", "tcp.analysis.ack_rtt",
 		"-e", "tcp.stream",
 		"-e", "tcp.analysis.retransmission",
+		"-e", "ip.dst",
 		"-T", "fields",
 		"-E", "separator=,",
 		"-E", "quote=d")
