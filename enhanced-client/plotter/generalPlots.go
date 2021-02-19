@@ -81,8 +81,16 @@ func PingPlotter(settings Settings, wg *sync.WaitGroup) {
 			return values[i].X < values[j].X
 		})
 		err = plotutil.AddLines(p, "Ping RTT", values)
-		p.Y.Min = min
-		p.Y.Max = max
+		if settings.RttMin != 0 {
+			p.Y.Min = settings.RttMin
+		} else {
+			p.Y.Min = min
+		}
+		if settings.RttMax != 0 {
+			p.Y.Max = settings.RttMax
+		} else {
+			p.Y.Max = max
+		}
 		p.Draw(draw.New(pdfToSave))
 	}
 
@@ -175,8 +183,16 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 			scatterPlot, _ := plotter.NewScatter(scatterData)
 			scatterPlot.Radius = vg.Length(10)
 			p.Add(scatterPlot)
-			p.Y.Min = min
-			p.Y.Max = max
+			if settings.RttMin != 0 {
+				p.Y.Min = settings.RttMin
+			} else {
+				p.Y.Min = min
+			}
+			if settings.RttMax != 0 {
+				p.Y.Max = settings.RttMax
+			} else {
+				p.Y.Max = max
+			}
 			if !(p.X.Max-p.X.Min < (float64(settings.RunsStepDuration) - (float64(settings.RunsStepDuration) / 10))) {
 				if streamCounter != 0 {
 					pdfToSave.NextPage()
