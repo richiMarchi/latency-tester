@@ -145,7 +145,9 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 		if len(values) == 0 {
 			firstTs = ts
 			previousStream = streamId
-			localIp = row[4]
+			if len(row) > 4 {
+				localIp = row[4]
+			}
 		}
 		if previousStream != streamId || index == len(records)-1 {
 			// If it is the last iteration, add the last record before saving to pdf
