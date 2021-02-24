@@ -18,6 +18,7 @@ var interval = flag.Uint64("interval", 1000, "send interval time (ms)")
 var https = flag.Bool("tls", false, "true if TLS enabled")
 var tracerouteIp = flag.String("traceroute", "", "traceroute ip if requested")
 var sockOpt = flag.Bool("tcpStats", false, "true if TCP Stats requested")
+var srcPort = flag.Int("srcPort", 0, "client source port")
 var address string
 
 func main() {

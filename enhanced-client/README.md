@@ -64,6 +64,8 @@ ping_destinations:
   ip: "23.45.67.89"
 # Interval between ping executions (in seconds)
 ping_interval: 30
+# Source port for the client socket (default is random)
+source_port: 5555
 # List of endpoints to test E2E latency, defined by its name/description and its address
 endpoints:
 - description: "1_Example-Address"

@@ -45,7 +45,9 @@ func connect() *websocket.Conn {
 		dialer := websocket.Dialer{
 			TLSClientConfig:  conf,
 			HandshakeTimeout: 10 * time.Second,
-			NetDialContext:   (&net.Dialer{LocalAddr: &net.TCPAddr{Port: 5556}}).DialContext,
+		}
+		if *srcPort != 0 {
+			dialer.NetDialContext = (&net.Dialer{LocalAddr: &net.TCPAddr{Port: *srcPort}}).DialContext
 		}
 		u := url.URL{Scheme: "wss", Host: addrParts[0], Path: pathString + "/echo"}
 		c, _, err := dialer.Dial(u.String(), nil)
@@ -54,9 +56,9 @@ func connect() *websocket.Conn {
 		}
 		conn = c
 	} else {
-		dialer := websocket.Dialer{
-			HandshakeTimeout: 10 * time.Second,
-			NetDialContext:   (&net.Dialer{LocalAddr: &net.TCPAddr{Port: 5556}}).DialContext,
+		dialer := websocket.Dialer{HandshakeTimeout: 10 * time.Second}
+		if *srcPort != 0 {
+			dialer.NetDialContext = (&net.Dialer{LocalAddr: &net.TCPAddr{Port: *srcPort}}).DialContext
 		}
 		u := url.URL{Scheme: "ws", Host: addrParts[0], Path: "/echo"}
 		c, _, err := dialer.Dial(u.String(), nil)
