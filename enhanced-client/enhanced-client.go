@@ -42,6 +42,7 @@ type Settings struct {
 	IperfDestinations []IperfData    `yaml:"iperf_destinations"`
 	PingDestinations  []PingData     `yaml:"ping_destinations"`
 	PingInterval      int            `yaml:"ping_interval"` // in seconds
+	SourcePort        int            `yaml:"source_port"`
 	Endpoints         []EndpointData `yaml:"endpoints"`
 	Intervals         []int          `yaml:"intervals"`     // in milliseconds
 	MsgSizes          []int          `yaml:"msg_sizes"`     // in bytes
@@ -195,6 +196,7 @@ func main() {
 						"Msg: " + strconv.Itoa(size))
 					clientCmd := exec.Command("./client",
 						"-reps="+strconv.Itoa(repetitions),
+						"-srcPort="+strconv.Itoa(settings.SourcePort),
 						"-interval="+strconv.Itoa(inter),
 						"-requestPayload="+strconv.Itoa(size),
 						"-responsePayload="+strconv.Itoa(settings.ResponseSize),
