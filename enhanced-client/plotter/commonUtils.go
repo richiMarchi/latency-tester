@@ -128,6 +128,12 @@ func openDesiredFiles(execdir string, requestedRuns []int, nameLike ...string) [
 	return openFiles
 }
 
+func closeOpenFiles(files []*os.File) {
+	for _, f := range files {
+		f.Close()
+	}
+}
+
 // Return a BoxPlot graph and its min and max values with int as key of the map
 func generateIntBoxPlotAndLimits(p *plot.Plot,
 	valuesMap *map[int]plotter.Values,

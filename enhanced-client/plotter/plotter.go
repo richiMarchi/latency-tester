@@ -127,6 +127,8 @@ func main() {
 	} else {
 		log.Println(LoggerHdr + "Settings file successfully copied into plots folder")
 	}
+	fromFile.Close()
+	toFile.Close()
 
 	log.Println(LoggerHdr + "Creating README file")
 	readme, err := os.Create(settings.ExecDir + PlotDirName + "README.txt")

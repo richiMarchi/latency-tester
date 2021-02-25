@@ -104,6 +104,8 @@ func intXepBoxPlot(ep EndpointData,
 		}
 	}
 
+	closeOpenFiles(openFiles)
+
 	p.X.Label.Text = "Request Size (B)"
 	p.Y.Label.Text = "E2E RTT (ms)"
 	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
@@ -152,6 +154,8 @@ func sizeXepBoxPlot(ep EndpointData,
 		}
 	}
 
+	closeOpenFiles(openFiles)
+
 	p.X.Label.Text = "Send Interval (ms)"
 	p.Y.Label.Text = "E2E RTT (ms)"
 	p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
@@ -196,6 +200,8 @@ func intXsizeBoxPlot(msgSize int,
 			}
 		}
 	}
+
+	closeOpenFiles(openFiles)
 
 	p.X.Label.Text = "Endpoint"
 	p.Y.Label.Text = "E2E RTT (ms)"

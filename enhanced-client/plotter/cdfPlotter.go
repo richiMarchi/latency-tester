@@ -95,6 +95,8 @@ func intXepCDF(
 		}
 	}
 
+	closeOpenFiles(openFiles)
+
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
@@ -144,6 +146,8 @@ func sizeXepCDF(
 		}
 	}
 
+	closeOpenFiles(openFiles)
+
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
@@ -188,6 +192,8 @@ func intXsizeCDF(
 			}
 		}
 	}
+
+	closeOpenFiles(openFiles)
 
 	p.X.Label.Text = "E2E RTT (ms)"
 	p.Y.Label.Text = "P(x)"

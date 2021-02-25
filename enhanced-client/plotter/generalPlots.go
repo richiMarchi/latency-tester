@@ -92,6 +92,7 @@ func PingPlotter(settings Settings, wg *sync.WaitGroup) {
 			p.Y.Max = max
 		}
 		p.Draw(draw.New(pdfToSave))
+		file.Close()
 	}
 
 	if _, err := pdfToSave.WriteTo(w); err != nil {
@@ -108,8 +109,10 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 	// Open the desired file
 	file, err := os.Open(settings.ExecDir + DataDirName + strconv.Itoa(run) + "-tcpdump_report.csv")
 	errMgmt(err)
+	defer file.Close()
 	params, err := os.Open(settings.ExecDir + "parameters.txt")
 	errMgmt(err)
+	defer params.Close()
 
 	var values plotter.XYs
 	var inboundRetr []*hplot.VertLine
@@ -345,6 +348,7 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 						boxplot.Draw(draw.New(hourlyPdfToSave))
 						hourlyMap = make(map[string]plotter.Values)
 					}
+					file.Close()
 				}
 				if (epIndex + interIndex + sizeIndex) != 0 {
 					pdfToSave.NextPage()
