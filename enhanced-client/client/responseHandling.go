@@ -59,14 +59,14 @@ func singleRead(
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.UnixNano(), 10))
 		toolRtt.WriteString(",-1\n")
 	} else {
-		fmt.Printf("%d.\t%d.%d ms\n", jsonMap.Id, latency.Milliseconds(), latency%time.Millisecond)
+		fmt.Printf("%d.\t%f ms\n", jsonMap.Id, float64(latency.Nanoseconds())/float64(time.Millisecond.Nanoseconds()))
 		mux.Lock()
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ClientTimestamp.UnixNano(), 10))
 		toolRtt.WriteString(",")
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.UnixNano(), 10))
 		toolRtt.WriteString(",")
-		toolRtt.WriteString(strconv.FormatInt(latency.Milliseconds(), 10) + "." +
-			strconv.Itoa(int(latency%time.Millisecond)))
+		toolRtt.WriteString(strconv.FormatFloat(
+			float64(latency.Nanoseconds())/float64(time.Millisecond.Nanoseconds()), 'f', -1, 64))
 		toolRtt.WriteString("\n")
 	}
 }
