@@ -46,7 +46,7 @@ func PingPlotter(settings Settings, wg *sync.WaitGroup) {
 		p.X.Label.Text = "Time (s)"
 		p.Y.Label.Text = "OS RTT (ms)"
 		p.Title.Text = "Ping destination: " + dest.Name
-		p.Title.Font.Size = 20
+		configurePlotFontSizes(p, false)
 		p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 		p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 
@@ -175,7 +175,7 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 			p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 			p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 			p.Title.Text = getTcpPlotTitle(endpoints, intervals, sizes, streamCounter)
-			p.Title.Font.Size = 20
+			configurePlotFontSizes(p, false)
 			// Remove the last 3 percentiles
 			sort.Slice(values, func(i, j int) bool {
 				return values[i].Y < values[j].Y
@@ -203,7 +203,6 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 					p.Legend.Add("Outbound Retransmissions", line)
 				}
 			}
-			p.Legend.Font.Size = 20
 			if settings.RttMin != 0 {
 				p.Y.Min = settings.RttMin
 			} else {
@@ -332,7 +331,7 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 						box.Y.Label.Text = "E2E RTT (ms)"
 						box.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 						box.Title.Text = "E2E Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
-						box.Title.Font.Size = 20
+						configurePlotFontSizes(box, true)
 						boxplot, hourMin, hourMax := generateStringBoxPlotAndLimits(
 							box, &hourlyMap, settings.PercentilesToRemove, settings.WhiskerMin, settings.WhiskerMax)
 						if settings.RttMin != 0 {
@@ -361,7 +360,7 @@ func RttPlotter(settings Settings, wg *sync.WaitGroup) {
 				p.Y.Tick.Marker = hplot.Ticks{N: AxisTicks}
 				p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 				p.Title.Text = "E2E Latency: " + addr.Description + " - " + strconv.Itoa(inter) + "ms - " + strconv.Itoa(size) + "B"
-				p.Title.Font.Size = 20
+				configurePlotFontSizes(p, false)
 				// Remove the last three percentiles
 				sort.Slice(values, func(i, j int) bool {
 					return values[i].Y < values[j].Y

@@ -53,7 +53,7 @@ func typedCDFs(settings Settings, objectType int, wg *sync.WaitGroup) {
 	if !settings.EqualizationDisabled {
 		adjustMinMaxX(plots, rows, cols, min, max)
 	}
-	commonPlotting(plots, rows, cols, cols*500, settings.ExecDir+PlotDirName+filename)
+	commonPlotting(plots, rows, cols, cols*650, settings.ExecDir+PlotDirName+filename)
 
 	wg.Done()
 }
@@ -101,7 +101,7 @@ func intXepCDF(
 	p.Y.Label.Text = "P(x)"
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(si) + "ms"
-	p.Title.Font.Size = 20
+	configurePlotFontSizesMultiple(p, false)
 
 	generateIntCDFPlot(p, &valuesMap, percentilesToRemove)
 
@@ -152,7 +152,7 @@ func sizeXepCDF(
 	p.Y.Label.Text = "P(x)"
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = ep.Description + " - " + strconv.Itoa(msgSize) + "B"
-	p.Title.Font.Size = 20
+	configurePlotFontSizesMultiple(p, false)
 
 	generateIntCDFPlot(p, &valuesMap, percentilesToRemove)
 
@@ -199,7 +199,7 @@ func intXsizeCDF(
 	p.Y.Label.Text = "P(x)"
 	p.X.Tick.Marker = hplot.Ticks{N: AxisTicks}
 	p.Title.Text = strconv.Itoa(si) + "ms - " + strconv.Itoa(msgSize) + "B"
-	p.Title.Font.Size = 20
+	configurePlotFontSizesMultiple(p, false)
 
 	generateStringCDFPlot(p, &valuesMap, percentilesToRemove)
 

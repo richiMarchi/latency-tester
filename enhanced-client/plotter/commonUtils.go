@@ -378,3 +378,27 @@ func handleWhiskerAndOutliers(boxplot *plotter.BoxPlot,
 	}
 	boxplot.Outside = updatedOutliers
 }
+
+func configurePlotFontSizes(plot *plot.Plot, xTickSmall bool) {
+	plot.Title.Font.Size = vg.Points(30)
+	plot.X.Label.Font.Size = vg.Points(28)
+	plot.Y.Label.Font.Size = vg.Points(28)
+	plot.X.Tick.Label.Font.Size = vg.Points(26)
+	if xTickSmall {
+		plot.X.Tick.Label.Font.Size = vg.Points(14)
+	}
+	plot.Y.Tick.Label.Font.Size = vg.Points(26)
+	plot.Legend.Font.Size = vg.Points(20)
+}
+
+func configurePlotFontSizesMultiple(plot *plot.Plot, xTickSmall bool) {
+	plot.Title.Font.Size = vg.Points(24)
+	plot.X.Label.Font.Size = vg.Points(22)
+	plot.Y.Label.Font.Size = vg.Points(22)
+	plot.X.Tick.Label.Font.Size = vg.Points(20)
+	if xTickSmall {
+		plot.X.Tick.Label.Font.Size = vg.Points(14)
+	}
+	plot.Y.Tick.Label.Font.Size = vg.Points(20)
+	plot.Legend.Font.Size = vg.Points(20)
+}
