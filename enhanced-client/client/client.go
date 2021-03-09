@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 )
@@ -26,6 +28,13 @@ func main() {
 
 	if address == "" {
 		log.Fatal("Server address required")
+	}
+
+	if *https {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		address = "https://" + address + "/echo"
+	} else {
+		address = "http://" + address + "/echo"
 	}
 
 	printLogs()

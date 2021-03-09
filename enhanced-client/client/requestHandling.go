@@ -1,9 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
-	"github.com/gorilla/websocket"
 	"log"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -28,19 +29,14 @@ func requestSender(
 			ServerTimestamp: time.Time{},
 			ResponseSize:    *responseBytes,
 		}
-		c := connect()
 		// Parallel read dispatcher
 		readersWg.Add(1)
-		go readDispatcher(c, &readersWg, toolRtt)
 		marshal, _ := json.Marshal(jsonMap)
-		err := c.WriteMessage(websocket.TextMessage, marshal)
-		err = c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+		resp, err := http.Post(address, "application/json", bytes.NewBuffer(marshal))
 		if err != nil {
-			log.Println("write close: ", err)
-			return
-		}
-		if err != nil {
-			log.Printf("Error sending message %d", msgId)
+			log.Printf("Error sending message %d: %s", *msgId, err.Error())
+		} else {
+			go readDispatcher(resp, &readersWg, toolRtt)
 		}
 		tsDiff := (time.Duration(*interval) * time.Millisecond) - time.Duration(getTimestamp().Sub(tmp).Nanoseconds())
 		if tsDiff < 0 {

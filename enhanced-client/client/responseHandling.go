@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/gorilla/websocket"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"sync"
@@ -11,22 +11,28 @@ import (
 )
 
 func readDispatcher(
-	c *websocket.Conn,
+	resp *http.Response,
 	wg *sync.WaitGroup,
 	toolRtt *os.File) {
+	defer resp.Body.Close()
 	var mux sync.Mutex
-	_, message, _ := c.ReadMessage()
-	singleRead(&message, &mux, toolRtt)
+	decoder := json.NewDecoder(resp.Body)
+	var jsonMap DataJSON
+	err := decoder.Decode(&jsonMap)
+	if err != nil {
+		log.Println("read: ", err)
+		log.Println()
+		return
+	}
+	singleRead(jsonMap, &mux, toolRtt)
 	wg.Done()
 }
 
 func singleRead(
-	message *[]byte,
+	jsonMap DataJSON,
 	mux *sync.Mutex,
 	toolRtt *os.File) {
 	defer mux.Unlock()
-	var jsonMap DataJSON
-	_ = json.Unmarshal(*message, &jsonMap)
 	latency := getTimestamp().Sub(jsonMap.ClientTimestamp)
 	if jsonMap.Id == 0 {
 		log.Println("Connection Reset")
@@ -36,14 +42,14 @@ func singleRead(
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.UnixNano(), 10))
 		toolRtt.WriteString(",-1\n")
 	} else {
-		log.Printf("%d.\t%d.%d ms", jsonMap.Id, latency.Milliseconds(), latency%time.Millisecond)
+		log.Printf("%d.\t%f ms\n", jsonMap.Id, float64(latency.Nanoseconds())/float64(time.Millisecond.Nanoseconds()))
 		mux.Lock()
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ClientTimestamp.UnixNano(), 10))
 		toolRtt.WriteString(",")
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.UnixNano(), 10))
 		toolRtt.WriteString(",")
-		toolRtt.WriteString(strconv.FormatInt(latency.Milliseconds(), 10) + "." +
-			strconv.Itoa(int(latency%time.Millisecond)))
+		toolRtt.WriteString(strconv.FormatFloat(
+			float64(latency.Nanoseconds())/float64(time.Millisecond.Nanoseconds()), 'f', -1, 64))
 		toolRtt.WriteString("\n")
 	}
 }
