@@ -21,6 +21,7 @@ func readDispatcher(
 	var mux sync.Mutex
 	for {
 		_, message, err := c.ReadMessage()
+		rcvTs := getTimestamp()
 		if err != nil {
 			if strings.Contains(err.Error(), "1000") {
 				fmt.Println("read: ", err)
@@ -37,7 +38,7 @@ func readDispatcher(
 		wgReader.Add(1)
 
 		// dispatch read
-		go singleRead(&wgReader, &message, &mux, toolRtt)
+		go singleRead(&wgReader, &message, &mux, toolRtt, rcvTs)
 	}
 }
 
@@ -45,12 +46,13 @@ func singleRead(
 	wgReader *sync.WaitGroup,
 	message *[]byte,
 	mux *sync.Mutex,
-	toolRtt *os.File) {
+	toolRtt *os.File,
+	rcvTs time.Time) {
 	defer wgReader.Done()
 	defer mux.Unlock()
 	var jsonMap DataJSON
 	_ = json.Unmarshal(*message, &jsonMap)
-	latency := getTimestamp().Sub(jsonMap.ClientTimestamp)
+	latency := rcvTs.Sub(jsonMap.ClientTimestamp)
 	if jsonMap.Id == 0 {
 		log.Println("Connection Reset")
 		mux.Lock()
