@@ -16,15 +16,8 @@ import (
 	"unsafe"
 )
 
-type DataJSON struct {
-	Id              uint64
-	ClientTimestamp time.Time
-	ServerTimestamp time.Time
-	Payload         string
-}
-
 type TimedTCPInfo struct {
-	MsgId     uint64
+	MsgId     int32
 	Timestamp time.Time
 	TcpInfo   *tcpinfo.TCPInfo
 }

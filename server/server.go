@@ -1,9 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"github.com/gorilla/websocket"
+	"github.com/richiMarchi/latency-tester/server/serialization/protobuf"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"net/http"
 	"strconv"
@@ -40,7 +42,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 	}
 	responseBytes, _ := strconv.Atoi(string(msg))
 
-	payload := randomString(uint(responseBytes) - 62 /* offset to set the perfect desired message size */)
+	payload := randomString(uint(responseBytes))
 
 	printLogs(c.RemoteAddr(), responseBytes)
 
@@ -51,11 +53,11 @@ func echo(w http.ResponseWriter, r *http.Request) {
 			log.Println("read: " + err.Error() + "\n")
 			return
 		}
-		var jsonMap DataJSON
-		_ = json.Unmarshal(message, &jsonMap)
-		jsonMap.ServerTimestamp = getTimestamp()
+		jsonMap := &protobuf.DataJSON{}
+		_ = proto.Unmarshal(message, jsonMap)
+		jsonMap.ServerTimestamp = timestamppb.New(getTimestamp())
 		jsonMap.Payload = payload
-		message, _ = json.Marshal(jsonMap)
+		message, _ = proto.Marshal(jsonMap)
 		err = c.WriteMessage(mt, message)
 		log.Printf("recv: ACK")
 		if err != nil {

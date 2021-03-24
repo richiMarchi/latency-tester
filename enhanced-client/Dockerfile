@@ -1,4 +1,5 @@
 FROM golang as builder
+COPY client/serialization/ /usr/local/go/src/serialization
 RUN apt-get update && apt-get install libpcap-dev -y
 WORKDIR /build
 COPY go.mod .

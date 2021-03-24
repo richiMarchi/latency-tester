@@ -1,14 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/richiMarchi/latency-tester/enhanced-client/client/serialization/protobuf"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -17,15 +17,12 @@ func readDispatcher(
 	done chan struct{},
 	toolRtt *os.File,
 	reset chan *websocket.Conn) {
-	var wgReader sync.WaitGroup
-	var mux sync.Mutex
 	for {
 		_, message, err := c.ReadMessage()
 		rcvTs := getTimestamp()
 		if err != nil {
 			if strings.Contains(err.Error(), "1000") {
 				fmt.Println("read: ", err)
-				wgReader.Wait()
 				close(done)
 				return
 			} else {
@@ -35,37 +32,26 @@ func readDispatcher(
 				continue
 			}
 		}
-		wgReader.Add(1)
 
-		// dispatch read
-		go singleRead(&wgReader, &message, &mux, toolRtt, rcvTs)
+		handleMessage(&message, toolRtt, rcvTs)
 	}
 }
 
-func singleRead(
-	wgReader *sync.WaitGroup,
-	message *[]byte,
-	mux *sync.Mutex,
-	toolRtt *os.File,
-	rcvTs time.Time) {
-	defer wgReader.Done()
-	defer mux.Unlock()
-	var jsonMap DataJSON
-	_ = json.Unmarshal(*message, &jsonMap)
-	latency := rcvTs.Sub(jsonMap.ClientTimestamp)
+func handleMessage(message *[]byte, toolRtt *os.File, rcvTs time.Time) {
+	jsonMap := &protobuf.DataJSON{}
+	_ = proto.Unmarshal(*message, jsonMap)
 	if jsonMap.Id == 0 {
 		log.Println("Connection Reset")
-		mux.Lock()
-		toolRtt.WriteString(strconv.FormatInt(jsonMap.ClientTimestamp.UnixNano(), 10))
+		toolRtt.WriteString(strconv.FormatInt(jsonMap.ClientTimestamp.AsTime().UnixNano(), 10))
 		toolRtt.WriteString(",")
-		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.UnixNano(), 10))
+		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.AsTime().UnixNano(), 10))
 		toolRtt.WriteString(",-1\n")
 	} else {
+		latency := rcvTs.Sub(jsonMap.ClientTimestamp.AsTime())
 		fmt.Printf("%d.\t%f ms\n", jsonMap.Id, float64(latency.Nanoseconds())/float64(time.Millisecond.Nanoseconds()))
-		mux.Lock()
-		toolRtt.WriteString(strconv.FormatInt(jsonMap.ClientTimestamp.UnixNano(), 10))
+		toolRtt.WriteString(strconv.FormatInt(jsonMap.ClientTimestamp.AsTime().UnixNano(), 10))
 		toolRtt.WriteString(",")
-		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.UnixNano(), 10))
+		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.AsTime().UnixNano(), 10))
 		toolRtt.WriteString(",")
 		toolRtt.WriteString(strconv.FormatFloat(
 			float64(latency.Nanoseconds())/float64(time.Millisecond.Nanoseconds()), 'f', -1, 64))

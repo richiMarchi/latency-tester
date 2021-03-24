@@ -25,9 +25,6 @@ func main() {
 	flag.Parse()
 	address = flag.Arg(0)
 	log.SetFlags(0)
-	if *requestBytes < 62 || *responseBytes < 62 {
-		log.Fatal("Minimum payload size: 62")
-	}
 
 	if address == "" {
 		log.Fatal("Server address required")
@@ -73,7 +70,7 @@ func main() {
 
 	var wg sync.WaitGroup
 	ssReading := true
-	var msgId uint64 = 0
+	var msgId int32 = 0
 
 	// If explicitly requested tcp stats handlers
 	if *sockOpt {

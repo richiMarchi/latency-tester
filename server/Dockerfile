@@ -1,4 +1,5 @@
 FROM golang as builder
+COPY serialization/ /usr/local/go/src/serialization
 WORKDIR /build
 COPY go.mod .
 COPY go.sum .

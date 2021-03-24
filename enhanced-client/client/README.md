@@ -16,7 +16,7 @@ docker pull richimarchi/latency-tester_client
 docker run [--name <container-name>] -v <local-log-folder>:/execdir richimarchi/latency-tester_client [-reps=<repetitions>] [-requestPayload=<bytes>] [-responsePayload=<bytes>] [-interval=<ms>] [-tcpStats=<enabled>] [-tls=<enabled>] [-traceroute=<address>] [-log=<log-file>] <address>
 ```
 
-Latest version: `1.0.3`
+Latest version: `1.1.0`
 
 ### Required input parameters
 
@@ -29,8 +29,8 @@ Latest version: `1.0.3`
 |Param|Description|Default Value|
 |---|---|---|
 |`-reps`|Number of test repetition, if `0` it runs until given interrupt (`CTRL + C`)|`0`|
-|`-requestPayload`|Request payload size (in bytes), minimum value: `62`|`64`|
-|`-responsePayload`|Response payload size (in bytes), minimum value: `62`|`64`|
+|`-requestPayload`|Request payload size (in bytes)|`64`|
+|`-responsePayload`|Response payload size (in bytes)|`64`|
 |`-interval`|Requests send interval (in milliseconds)|`1000`|
 |`-tcpStats`|`true` if TCP Stats requested (short execution time is suggested, as it consumes a lot of CPU and RAM)|`false`|
 |`-tls`|`true` if TLS requested|`false`|

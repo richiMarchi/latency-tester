@@ -1,9 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/gorilla/websocket"
+	"github.com/richiMarchi/latency-tester/enhanced-client/client/serialization/protobuf"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"os"
 	"time"
@@ -14,21 +17,21 @@ func requestSender(
 	interrupt chan os.Signal,
 	ssReading *bool,
 	reset chan *websocket.Conn,
-	msgId *uint64) {
-	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
+	msgId *int32) {
+	payload := randomString(*requestBytes)
 	// If *reps == 0 then loop infinitely, otherwise loop *reps times
 	if *reps != 0 {
 		*reps += 1
 	}
-	for *msgId = 1; *msgId != *reps; *msgId++ {
+	for *msgId = 1; *msgId != int32(*reps); *msgId++ {
 		tmp := getTimestamp()
-		jsonMap := DataJSON{
+		jsonMap := &protobuf.DataJSON{
 			Id:              *msgId,
 			Payload:         payload,
-			ClientTimestamp: tmp,
-			ServerTimestamp: time.Time{},
+			ClientTimestamp: timestamppb.New(tmp),
+			ServerTimestamp: &timestamp.Timestamp{},
 		}
-		marshal, _ := json.Marshal(jsonMap)
+		marshal, _ := proto.Marshal(jsonMap)
 		err := c.WriteMessage(websocket.TextMessage, marshal)
 		for err != nil {
 			log.Printf("Trying to reset connection...")
@@ -39,7 +42,7 @@ func requestSender(
 			}
 			jsonMap.Id = 0
 			jsonMap.Payload = "Connection Reset"
-			resetMarshal, _ := json.Marshal(jsonMap)
+			resetMarshal, _ := proto.Marshal(jsonMap)
 			err = c.WriteMessage(websocket.TextMessage, resetMarshal)
 		}
 		tsDiff := (time.Duration(*interval) * time.Millisecond) - time.Duration(getTimestamp().Sub(tmp).Nanoseconds())

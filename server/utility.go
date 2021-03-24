@@ -7,13 +7,6 @@ import (
 	"time"
 )
 
-type DataJSON struct {
-	Id              uint64
-	ClientTimestamp time.Time
-	ServerTimestamp time.Time
-	Payload         string
-}
-
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))

@@ -25,7 +25,7 @@ func getSocketStats(
 	ssReading *bool,
 	outputFile *os.File,
 	wg *sync.WaitGroup,
-	msgId *uint64,
+	msgId *int32,
 	reset chan *websocket.Conn) {
 	defer wg.Done()
 	defer outputFile.Close()
@@ -58,7 +58,7 @@ func getSocketStats(
 			str = strings.ReplaceAll(str, "[", "")
 			str = strings.ReplaceAll(str, "]", "")
 			outputFile.WriteString(strconv.FormatInt(info.Timestamp.UnixNano(), 10) + "," +
-				strconv.FormatUint(info.MsgId, 10) + "," + str + "\n")
+				strconv.Itoa(int(info.MsgId)) + "," + str + "\n")
 		}
 	}
 }
