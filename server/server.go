@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"flag"
 	"github.com/gorilla/websocket"
 	"github.com/richiMarchi/latency-tester/server/serialization/protobuf"
@@ -42,7 +43,9 @@ func echo(w http.ResponseWriter, r *http.Request) {
 	}
 	responseBytes, _ := strconv.Atoi(string(msg))
 
+	// Create a random payload to avoid compression
 	payload := make([]byte, responseBytes)
+	_, _ = rand.Read(payload)
 
 	printLogs(c.RemoteAddr(), responseBytes)
 

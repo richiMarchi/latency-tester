@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/gorilla/websocket"
@@ -18,7 +19,9 @@ func requestSender(
 	ssReading *bool,
 	reset chan *websocket.Conn,
 	msgId *int32) {
+	// Create a random payload to avoid compression
 	payload := make([]byte, *requestBytes)
+	_, _ = rand.Read(payload)
 	// If *reps == 0 then loop infinitely, otherwise loop *reps times
 	if *reps != 0 {
 		*reps += 1
