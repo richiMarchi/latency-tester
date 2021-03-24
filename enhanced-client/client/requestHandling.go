@@ -18,12 +18,13 @@ func requestSender(
 	ssReading *bool,
 	reset chan *websocket.Conn,
 	msgId *int32) {
-	payload := randomString(*requestBytes)
+	payload := make([]byte, *requestBytes)
 	// If *reps == 0 then loop infinitely, otherwise loop *reps times
 	if *reps != 0 {
 		*reps += 1
 	}
 	for *msgId = 1; *msgId != int32(*reps); *msgId++ {
+		// Create the message with message ID and the current timestamp, serialize with protobuf and send it
 		tmp := getTimestamp()
 		jsonMap := &protobuf.DataJSON{
 			Id:              *msgId,
@@ -41,7 +42,7 @@ func requestSender(
 				reset <- c
 			}
 			jsonMap.Id = 0
-			jsonMap.Payload = "Connection Reset"
+			jsonMap.Payload = []byte{}
 			resetMarshal, _ := proto.Marshal(jsonMap)
 			err = c.WriteMessage(websocket.TextMessage, resetMarshal)
 		}

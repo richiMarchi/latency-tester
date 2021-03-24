@@ -42,7 +42,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 	}
 	responseBytes, _ := strconv.Atoi(string(msg))
 
-	payload := randomString(uint(responseBytes))
+	payload := make([]byte, responseBytes)
 
 	printLogs(c.RemoteAddr(), responseBytes)
 

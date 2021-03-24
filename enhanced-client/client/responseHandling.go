@@ -18,8 +18,8 @@ func readDispatcher(
 	toolRtt *os.File,
 	reset chan *websocket.Conn) {
 	for {
+		// Read all incoming messages
 		_, message, err := c.ReadMessage()
-		rcvTs := getTimestamp()
 		if err != nil {
 			if strings.Contains(err.Error(), "1000") {
 				fmt.Println("read: ", err)
@@ -33,11 +33,12 @@ func readDispatcher(
 			}
 		}
 
-		handleMessage(&message, toolRtt, rcvTs)
+		handleMessage(&message, toolRtt)
 	}
 }
 
-func handleMessage(message *[]byte, toolRtt *os.File, rcvTs time.Time) {
+// Deserialize the message received and store data in the file
+func handleMessage(message *[]byte, toolRtt *os.File) {
 	jsonMap := &protobuf.DataJSON{}
 	_ = proto.Unmarshal(*message, jsonMap)
 	if jsonMap.Id == 0 {
@@ -47,7 +48,7 @@ func handleMessage(message *[]byte, toolRtt *os.File, rcvTs time.Time) {
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ServerTimestamp.AsTime().UnixNano(), 10))
 		toolRtt.WriteString(",-1\n")
 	} else {
-		latency := rcvTs.Sub(jsonMap.ClientTimestamp.AsTime())
+		latency := getTimestamp().Sub(jsonMap.ClientTimestamp.AsTime())
 		fmt.Printf("%d.\t%f ms\n", jsonMap.Id, float64(latency.Nanoseconds())/float64(time.Millisecond.Nanoseconds()))
 		toolRtt.WriteString(strconv.FormatInt(jsonMap.ClientTimestamp.AsTime().UnixNano(), 10))
 		toolRtt.WriteString(",")

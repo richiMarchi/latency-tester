@@ -9,5 +9,5 @@ message DataJSON{
 	int32 id = 1;
 	google.protobuf.Timestamp client_timestamp = 2;
 	google.protobuf.Timestamp server_timestamp = 3;
-	string payload = 4;
+	bytes payload = 4;
 }
