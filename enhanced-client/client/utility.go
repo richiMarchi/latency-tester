@@ -5,7 +5,6 @@ import (
 	"github.com/brucespang/go-tcpinfo"
 	"github.com/gorilla/websocket"
 	"log"
-	"math/rand"
 	"net"
 	"net/url"
 	"reflect"
@@ -14,23 +13,11 @@ import (
 	"unsafe"
 )
 
-type DataJSON struct {
-	Id              uint64
-	ClientTimestamp time.Time
-	ServerTimestamp time.Time
-	Payload         string
-	ResponseSize    uint64
-}
-
 type TimedTCPInfo struct {
 	MsgId     uint64
 	Timestamp time.Time
 	TcpInfo   *tcpinfo.TCPInfo
 }
-
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func connect() *websocket.Conn {
 	addrParts := strings.Split(address, "/")
@@ -62,18 +49,6 @@ func connect() *websocket.Conn {
 
 func getTimestamp() time.Time {
 	return time.Now()
-}
-
-func stringWithCharset(length uint64, charset string) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return string(b)
-}
-
-func randomString(length uint64) string {
-	return stringWithCharset(length, charset)
 }
 
 func printLogs() {

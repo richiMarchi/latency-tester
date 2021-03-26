@@ -1,9 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
+	"github.com/golang/protobuf/proto"
+	"github.com/richiMarchi/latency-tester/server/serialization/protobuf"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 )
 
@@ -24,19 +28,20 @@ func main() {
 }
 
 func echo(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var jsonMap DataJSON
-	err := decoder.Decode(&jsonMap)
+	message, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println("read: ", err)
 		log.Println()
 		return
 	}
+	jsonMap := &protobuf.DataJSON{}
+	_ = proto.Unmarshal(message, jsonMap)
 	log.Printf("recv: ACK")
-	jsonMap.ServerTimestamp = getTimestamp()
-	jsonMap.Payload = randomString(uint(jsonMap.ResponseSize) - 62 /* offset to set the perfect desired message size */)
-	encoder := json.NewEncoder(w)
-	err = encoder.Encode(jsonMap)
+	jsonMap.Payload = make([]byte, uint(jsonMap.ResponseSize))
+	rand.Read(jsonMap.Payload)
+	jsonMap.ServerTimestamp = timestamppb.New(getTimestamp())
+	responseMsg, _ := proto.Marshal(jsonMap)
+	_, err = w.Write(responseMsg)
 	if err != nil {
 		log.Println("write: ", err)
 		return

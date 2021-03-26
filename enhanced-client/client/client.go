@@ -65,7 +65,7 @@ func main() {
 	}
 
 	// Create synchronization channels
-	var msgId uint64 = 0
+	var msgId int32 = 0
 
 	// Start making requests
 	requestSender(interrupt, &msgId, toolRtt)

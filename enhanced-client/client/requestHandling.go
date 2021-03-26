@@ -1,43 +1,37 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/richiMarchi/latency-tester/enhanced-client/client/serialization/protobuf"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
-	"net/http"
+	"math/rand"
 	"os"
-	"sync"
 	"time"
 )
 
-func requestSender(
-	interrupt chan os.Signal,
-	msgId *uint64,
-	toolRtt *os.File) {
-	payload := randomString(*requestBytes - 62 /* offset to set the perfect desired message size */)
+func requestSender(interrupt chan os.Signal, msgId *int32, toolRtt *os.File) {
+	payload := make([]byte, *requestBytes)
+	rand.Read(payload)
 	// If *reps == 0 then loop infinitely, otherwise loop *reps times
 	if *reps != 0 {
 		*reps += 1
 	}
-	var readersWg sync.WaitGroup
-	for *msgId = 1; *msgId != *reps; *msgId++ {
+
+	for *msgId = 1; *msgId != int32(*reps); *msgId++ {
 		tmp := getTimestamp()
-		jsonMap := DataJSON{
+		jsonMap := &protobuf.DataJSON{
 			Id:              *msgId,
 			Payload:         payload,
-			ClientTimestamp: tmp,
-			ServerTimestamp: time.Time{},
-			ResponseSize:    *responseBytes,
+			ClientTimestamp: timestamppb.New(tmp),
+			ServerTimestamp: &timestamp.Timestamp{},
+			ResponseSize:    int32(*responseBytes),
 		}
 		// Parallel read dispatcher
-		readersWg.Add(1)
-		marshal, _ := json.Marshal(jsonMap)
-		resp, err := http.Post(address, "application/json", bytes.NewBuffer(marshal))
-		if err != nil {
-			log.Printf("Error sending message %d: %s", *msgId, err.Error())
-		} else {
-			go readDispatcher(resp, &readersWg, toolRtt)
-		}
+		marshal, _ := proto.Marshal(jsonMap)
+		postAndRead(&marshal, toolRtt)
+
 		tsDiff := (time.Duration(*interval) * time.Millisecond) - time.Duration(getTimestamp().Sub(tmp).Nanoseconds())
 		if tsDiff < 0 {
 			tsDiff = 0
@@ -50,5 +44,4 @@ func requestSender(
 		case <-time.After(tsDiff):
 		}
 	}
-	readersWg.Wait()
 }
