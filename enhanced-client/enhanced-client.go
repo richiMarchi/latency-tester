@@ -33,6 +33,7 @@ type PingData struct {
 type EndpointData struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
+	TlsEnabled  bool   `yaml:"tls_enabled"`
 }
 
 type Settings struct {
@@ -48,7 +49,6 @@ type Settings struct {
 	MsgSizes          []int          `yaml:"msg_sizes"`     // in bytes
 	ResponseSize      int            `yaml:"response_size"` // in bytes
 	TcpdumpEnabled    bool           `yaml:"tcpdump_enabled"`
-	TlsEnabled        bool           `yaml:"tls_enabled"`
 	ExecDir           string         `yaml:"exec_dir"`
 }
 
@@ -200,7 +200,7 @@ func main() {
 						"-interval="+strconv.Itoa(inter),
 						"-requestPayload="+strconv.Itoa(size),
 						"-responsePayload="+strconv.Itoa(settings.ResponseSize),
-						"-tls="+strconv.FormatBool(settings.TlsEnabled),
+						"-tls="+strconv.FormatBool(addr.TlsEnabled),
 						"-log="+settings.ExecDir+DataDirName+strconv.Itoa(i)+"-"+strings.ReplaceAll(addr.Destination, ":", "_")+
 							".i"+strconv.Itoa(inter)+".x"+strconv.Itoa(size),
 						addr.Destination)

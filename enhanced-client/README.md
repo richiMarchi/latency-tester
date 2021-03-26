@@ -70,8 +70,10 @@ source_port: 5555
 endpoints:
 - description: "1_Example-Address"
   destination: "12.34.56.67:8080"
+  tls_enabled: true
 - description: "2_Example-Hostname"
   destination: "latency-tester.example.com"
+  tls_enabled: false
 # List of intervals between the send of two messages to test E2E latency
 intervals:
 - 10
@@ -90,8 +92,6 @@ msg_sizes:
 response_size: 1024
 # True if TCP ACK RTT is requested
 tcpdump_enabled: true
-# True if TLS enabled
-tls_enabled: true
 # Execution directory (if in Docker, this must coincide with the mapped directory)
 exec_dir: "/execdir/"
 ```

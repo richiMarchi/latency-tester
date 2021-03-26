@@ -26,6 +26,7 @@ type PingData struct {
 type EndpointData struct {
 	Description string `yaml:"description"`
 	Destination string `yaml:"destination"`
+	TlsEnabled  bool   `yaml:"tls_enabled"`
 }
 
 type Settings struct {
@@ -40,7 +41,6 @@ type Settings struct {
 	MsgSizes             []int          `yaml:"msg_sizes"`     // in bytes
 	ResponseSize         int            `yaml:"response_size"` // in bytes
 	TcpdumpEnabled       bool           `yaml:"tcpdump_enabled"`
-	TlsEnabled           bool           `yaml:"tls_enabled"`
 	ExecDir              string         `yaml:"exec_dir"`
 	PercentilesToRemove  int            `yaml:"percentiles_to_remove"`
 	EqualizationDisabled bool           `yaml:"equalization_disabled"`
