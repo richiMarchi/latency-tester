@@ -1,10 +1,6 @@
 package main
 
 import (
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/richiMarchi/latency-tester/enhanced-client/client/serialization/protobuf"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"math/rand"
 	"os"
@@ -21,16 +17,7 @@ func requestSender(interrupt chan os.Signal, msgId *int32, toolRtt *os.File) {
 
 	for *msgId = 1; *msgId != int32(*reps); *msgId++ {
 		tmp := getTimestamp()
-		jsonMap := &protobuf.DataJSON{
-			Id:              *msgId,
-			Payload:         payload,
-			ClientTimestamp: timestamppb.New(tmp),
-			ServerTimestamp: &timestamp.Timestamp{},
-			ResponseSize:    int32(*responseBytes),
-		}
-		// Parallel read dispatcher
-		marshal, _ := proto.Marshal(jsonMap)
-		postAndRead(&marshal, toolRtt)
+		go postAndRead(*msgId, &payload, toolRtt)
 
 		tsDiff := (time.Duration(*interval) * time.Millisecond) - time.Duration(getTimestamp().Sub(tmp).Nanoseconds())
 		if tsDiff < 0 {

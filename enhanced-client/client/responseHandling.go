@@ -3,17 +3,32 @@ package main
 import (
 	"bytes"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/richiMarchi/latency-tester/enhanced-client/client/serialization/protobuf"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 )
 
-func postAndRead(marshal *[]byte, toolRtt *os.File) {
-	resp, err := http.Post(address, "application/json", bytes.NewBuffer(*marshal))
+func postAndRead(msgId int32, payload *[]byte, toolRtt *os.File) {
+	client := http.Client{Transport: &http.Transport{
+		DialContext: (&net.Dialer{}).DialContext},
+	}
+	reqMsg := &protobuf.DataJSON{
+		Id:              msgId,
+		Payload:         *payload,
+		ClientTimestamp: timestamppb.New(getTimestamp()),
+		ServerTimestamp: &timestamp.Timestamp{},
+		ResponseSize:    int32(*responseBytes),
+	}
+	// Parallel read dispatcher
+	marshal, _ := proto.Marshal(reqMsg)
+	resp, err := client.Post(address, "application/json", bytes.NewBuffer(marshal))
 	if err != nil {
 		log.Printf("Error sending message: %s", err.Error())
 		return
@@ -25,9 +40,9 @@ func postAndRead(marshal *[]byte, toolRtt *os.File) {
 		log.Println()
 		return
 	}
-	jsonMap := &protobuf.DataJSON{}
-	_ = proto.Unmarshal(message, jsonMap)
-	singleRead(jsonMap, toolRtt)
+	respMsg := &protobuf.DataJSON{}
+	_ = proto.Unmarshal(message, respMsg)
+	singleRead(respMsg, toolRtt)
 }
 
 func singleRead(
