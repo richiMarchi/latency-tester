@@ -129,6 +129,10 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 	records, _ := csv.NewReader(file).ReadAll()
 	records = records[1:]
 
+	sort.SliceStable(records, func(i, j int) bool {
+		return records[i][2] < records[j][2]
+	})
+
 	pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
 	w, err := os.Create(settings.ExecDir + PlotDirName + strconv.Itoa(run) + "-tcpPlot.pdf")
 	if err != nil {
