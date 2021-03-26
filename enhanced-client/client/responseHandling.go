@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/richiMarchi/latency-tester/enhanced-client/client/serialization/protobuf"
@@ -17,7 +18,8 @@ import (
 
 func postAndRead(msgId int32, payload *[]byte, toolRtt *os.File) {
 	client := http.Client{Transport: &http.Transport{
-		DialContext: (&net.Dialer{}).DialContext},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		DialContext:     (&net.Dialer{}).DialContext},
 	}
 	reqMsg := &protobuf.DataJSON{
 		Id:              msgId,
