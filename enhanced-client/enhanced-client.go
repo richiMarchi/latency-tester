@@ -415,9 +415,11 @@ func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal, localIp, execdir s
 	}
 	defer tcpRtt.Close()
 	tcpRtt.WriteString("#frame-timestamp,tcp-ack-rtt,tcp-stream-id,retransmission,ip-dst\n")
+	// The filter avoids health checker TCP segments, register all incoming ack packets for rtt and all retransmissions
 	tcpdumpCmd := exec.Command("tshark",
 		"-ni", "any",
-		"-Y", "(tcp.analysis.ack_rtt and ip.dst=="+localIp+") or tcp.analysis.retransmission",
+		"-Y", "!(ip.dst=="+localIp+"/16 and ip.src=="+localIp+"/16)"+
+			" and (tcp.analysis.ack_rtt and ip.dst=="+localIp+") or tcp.analysis.retransmission",
 		"-e", "frame.time_epoch",
 		"-e", "tcp.analysis.ack_rtt",
 		"-e", "tcp.stream",
