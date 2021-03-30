@@ -130,7 +130,9 @@ func TcpdumpPlotter(settings Settings, run int, wg *sync.WaitGroup) {
 	records = records[1:]
 
 	sort.SliceStable(records, func(i, j int) bool {
-		return records[i][2] < records[j][2]
+		left, _ := strconv.ParseFloat(records[i][2], 64)
+		right, _ := strconv.ParseFloat(records[j][2], 64)
+		return left < right
 	})
 
 	pdfToSave := vgpdf.New(vg.Points(2000), vg.Points(1000))
