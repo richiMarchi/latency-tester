@@ -1,0 +1,13 @@
+syntax = "proto3";
+package message;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "serialization/protobuf";
+
+message Message{
+	int32 id = 1;
+	google.protobuf.Timestamp client_timestamp = 2;
+	google.protobuf.Timestamp server_timestamp = 3;
+	bytes payload = 4;
+}
