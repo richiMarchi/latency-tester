@@ -1,4 +1,4 @@
-module github.com/richiMarchi/latency-tester/script
+module github.com/richiMarchi/latency-tester/enhanced-client
 
 go 1.14
 

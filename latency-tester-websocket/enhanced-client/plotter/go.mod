@@ -1,4 +1,4 @@
-module github.com/richiMarchi/latency-tester/script/plotter
+module github.com/richiMarchi/latency-tester/enhanced-client/plotter
 
 go 1.14
 
