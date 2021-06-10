@@ -3,8 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
-	"github.com/lorenzosaino/go-sysctl"
-	"gopkg.in/yaml.v2"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,6 +16,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lorenzosaino/go-sysctl"
+	"gopkg.in/yaml.v2"
 )
 
 type IperfData struct {
@@ -427,7 +429,9 @@ func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal, localIp, execdir s
 		"-e", "ip.dst",
 		"-T", "fields",
 		"-E", "separator=,",
-		"-E", "quote=d")
+		"-E", "quote=d",
+		"-s", "114", // limit the amount of data captured for each packet to headers only
+	)
 
 	// Handle stop
 	go func() {
@@ -446,7 +450,11 @@ func tcpDumper(run int, wg *sync.WaitGroup, c chan os.Signal, localIp, execdir s
 	log.Println(LoggerHdr + "Starting tcpdump for run " + strconv.Itoa(run))
 	tcpdumpOutput, err := tcpdumpCmd.Output()
 	if err != nil {
-		log.Fatal(LoggerHdr+"*** ERROR executing tcpdump for run "+strconv.Itoa(run)+":", err)
+		msg := fmt.Sprintf("%s *** ERROR executing tcpdump for run %v: %v", LoggerHdr, run, err)
+		if ee, ok := err.(*exec.ExitError); ok {
+			msg = fmt.Sprintf("%s (%v)", msg, string(ee.Stderr))
+		}
+		log.Fatal(msg)
 	} else {
 		log.Println(LoggerHdr + "Tcpdump for run " + strconv.Itoa(run) + " successfully executed")
 	}
