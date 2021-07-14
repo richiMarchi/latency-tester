@@ -5,6 +5,7 @@ data:
     allow_anonymous true
 
     listener 8080
+    set_tcp_nodelay true
 
     log_type all
     log_dest stdout
@@ -13,7 +14,7 @@ data:
 kind: ConfigMap
 metadata:
   name: mosquitto
-  
+
 ---
 apiVersion: v1
 kind: Service
@@ -26,7 +27,7 @@ spec:
   - port: 8080
     name: broker
   type: LoadBalancer
-  
+
 ---
 apiVersion: apps/v1
 kind: Deployment
