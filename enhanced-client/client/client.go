@@ -9,6 +9,8 @@ import (
 	"os/signal"
 )
 
+var transport http.Transport
+
 var reps = flag.Uint64("reps", 0, "number of repetitions")
 var logFile = flag.String("log", "/execdir/log", "file to store latency numbers")
 var requestBytes = flag.Uint64("requestPayload", 64, "bytes of the payload")
@@ -16,6 +18,7 @@ var responseBytes = flag.Uint64("responsePayload", 64, "bytes of the response pa
 var interval = flag.Uint64("interval", 1000, "send interval time (ms)")
 var https = flag.Bool("tls", false, "true if TLS enabled")
 var tracerouteIp = flag.String("traceroute", "", "traceroute ip if requested")
+var keepalive = flag.Bool("keepalive", false, "whether HTTP keepalive is enabled")
 var address string
 
 func main() {
@@ -35,6 +38,11 @@ func main() {
 		address = "https://" + address + "/echo"
 	} else {
 		address = "http://" + address + "/echo"
+	}
+
+	transport = http.Transport{
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+		DisableKeepAlives: !*keepalive,
 	}
 
 	printLogs()
